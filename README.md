@@ -35,7 +35,7 @@
 
 ## 指標預覽
 
-![8zz 反指標 - 元大台灣50 1小時線回測](assets/backtest-0050.png)
+![8zz 反指標 - 元大台灣50 1小時線回測](assets/backtest-0050.jpg)
 
 > **關於勝率的說明**
 >
@@ -204,7 +204,7 @@
 
 | 檔案路徑 | 說明 |
 |----------|------|
-| `assets/backtest-0050.png` | 回測截圖（0050 · 1H）|
+| `assets/backtest-0050.jpg` | 回測截圖（0050 · 1H）✅ |
 | `assets/step-01-open-chart.png` | 安裝步驟 1 |
 | `assets/step-02-pine-editor.png` | 安裝步驟 2 |
 | `assets/step-04-paste-save.png` | 安裝步驟 4 |
