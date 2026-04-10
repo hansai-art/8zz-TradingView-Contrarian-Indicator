@@ -16,10 +16,9 @@
 
 從過去 500 則訊息挑選 **63 筆**真實 FB 貼文操作，時間橫跨 2025/12 ~ 2026/04。
 
-**相關連結**
+**快速使用**
 
-- 原始資料出處：[巴逆逆 Facebook 主頁](https://www.facebook.com/DieWithoutBang)
-- TradingView 指標：[8zz 巴逆逆反指標](https://tw.tradingview.com/script/IbVmSqfj/)
+- **TradingView 指標**：[8zz 巴逆逆反指標回測](https://tw.tradingview.com/script/IbVmSqfj/)
 
 ---
 
@@ -119,11 +118,11 @@
 
 ## 安裝方式
 
-### 方法一：直接從 TradingView 搜尋（推薦）
+### 方法一：直接從 TradingView 新增（推薦）
 
-1. 在 TradingView 圖表頁開啟「指標」搜尋
-2. 搜尋「**8zz**」，找到 **「8zz 巴逆逆反指標」** 加到圖表
-   - 直接連結：[8zz 巴逆逆反指標 @ TradingView](https://tw.tradingview.com/script/IbVmSqfj/)
+1. 先收藏這個私人指標 ：[8zz 巴逆逆反指標 @ TradingView](https://tw.tradingview.com/script/IbVmSqfj/)
+2. 在 TradingView 圖表頁開啟「指標」搜尋
+3. 搜尋「**8zz**」，找到 **「8zz 巴逆逆反指標」** 加到圖表
 
 ![TradingView 搜尋 8zz 指標](assets/003.jpg)
 
