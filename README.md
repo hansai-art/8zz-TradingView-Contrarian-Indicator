@@ -10,11 +10,16 @@
 
 「8zz 反指標」是一個 TradingView 指標，。
 
-它記錄了巴逆逆（8zz）在 Facebook 公開發文的買賣操作，並以**反向信號**呈現在 K 線圖上。
+它記錄了巴逆逆（8zz）在 [Facebook 公開貼文](https://www.facebook.com/DieWithoutBang) 的買賣操作，並以**反向信號**呈現在 K 線圖上。
 
 核心哲學：**她停損賣出 → 指標偏多 ▲；她買進抄底 → 指標偏空 ▼。**
 
 從過去 500 則訊息挑選 **63 筆**真實 FB 貼文操作，時間橫跨 2025/12 ~ 2026/04。
+
+**相關連結**
+
+- 原始資料出處：[巴逆逆 Facebook 主頁](https://www.facebook.com/DieWithoutBang)
+- TradingView 指標：[8zz 巴逆逆反指標](https://tw.tradingview.com/script/IbVmSqfj/)
 
 ---
 
@@ -48,12 +53,16 @@
 | **資訊面板** | 右上/右下顯示方向、倉位、訊號年齡、翻轉次數 |
 | **雙模式勝率** | 固定N棒 vs 翻轉平倉，兩種勝率對比 + 建議 |
 
+![指標截圖 — 懸停箭頭顯示 Tooltip](assets/001.jpg)
+
+> 懸停於箭頭可查看原始 FB 貼文摘要、操作方向與訊號強度（★★★）
+
 ---
 
 ## 訊號強度分級
 
 | 強度 | 對應用語 | 箭頭大小 |
-|------|----------|----------|
+|------|----------|---------|
 | ★★★ 強 | all in、停損、畢業、認賠、虧損X位數、漲停跌停 | `size.huge` |
 | ★★☆ 中 | 買進、加碼、賣出、減碼、被套 | `size.large` |
 | ★☆☆ 弱 | 觀望、考慮、持有、看多看空但未行動 | `size.normal` |
@@ -78,7 +87,7 @@
 |------|------|
 | 筆數 | 63 筆 |
 | 期間 | 2025/12/03 ~ 2026/04/10 |
-| 來源 | FB 公開貼文（巴逆逆 8zz） |
+| 來源 | [FB 公開貼文（巴逆逆 8zz）](https://www.facebook.com/DieWithoutBang) |
 
 每筆事件含：時間戳、方向（偏多/偏空）、強度（1~3）、Tooltip 原文摘要
 
@@ -102,9 +111,25 @@
 |------|------|------|
 | 固定觀察K棒數 | `5` | 模式A：翻轉後固定N根K棒結算勝敗 |
 
+![參數設定面板](assets/002.jpg)
+
+> 參數設定面板（左）與右下角統計資訊面板（含勝率、翻轉次數）
+
 ---
 
 ## 安裝方式
+
+### 方法一：直接從 TradingView 搜尋（推薦）
+
+1. 在 TradingView 圖表頁開啟「指標」搜尋
+2. 搜尋「**8zz**」，找到 **「8zz 巴逆逆反指標」** 加到圖表
+   - 直接連結：[8zz 巴逆逆反指標 @ TradingView](https://tw.tradingview.com/script/IbVmSqfj/)
+
+![TradingView 搜尋 8zz 指標](assets/003.jpg)
+
+3. 建議在可見性中取消勾選**日、週、月**，只保留秒、分鐘、小時
+
+### 方法二：手動貼上 Pine Script
 
 1. 開啟 [TradingView](https://www.tradingview.com) → Pine Script 編輯器
 2. 複製 [`8zz-indicator.pine`](./8zz-indicator.pine) 全部內容
@@ -120,7 +145,10 @@
 ├── 8zz-indicator.pine       # Pine Script v6 原始碼（63筆事件）
 ├── 8zz-indicator-spec.md    # 完整規格文件
 ├── assets/
-│   └── backtest-0050.png    # 回測截圖（0050 · 1H）
+│   ├── backtest-0050.jpg    # 回測截圖（0050 · 1H）
+│   ├── 001.jpg              # 指標截圖 — Tooltip 展示
+│   ├── 002.jpg              # 參數設定面板截圖
+│   └── 003.jpg              # TradingView 搜尋安裝截圖
 └── README.md
 ```
 
