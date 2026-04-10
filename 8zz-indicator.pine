@@ -9,13 +9,13 @@ indicator("8zz反指標", overlay=true, max_labels_count=500)
 
 grp1 = "顯示"
 offset_atr = input.float(0.5, "箭頭距離 (ATR倍數)", minval=0.1, maxval=3.0, step=0.1, group=grp1, tooltip="越小越貼近K棒 建議0.3~0.8")
-showDots   = input.bool(false, "顯示加倉箭頭", group=grp1)
+showDots   = input.bool(true, "顯示加倉箭頭", group=grp1)
 showBg     = input.bool(true, "顯示背景色帶", group=grp1)
 showPanel  = input.bool(true, "顯示資訊面板", group=grp1)
-panelPos   = input.string("右上", "資訊面板位置", options=["右上", "右下"], group=grp1)
+panelPos   = input.string("右下", "資訊面板位置", options=["右上", "右下"], group=grp1)
 
 grp2 = "回測"
-holdBars = input.int(5, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
+holdBars = input.int(8, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
 
 float gap = ta.atr(14) * offset_atr
 
