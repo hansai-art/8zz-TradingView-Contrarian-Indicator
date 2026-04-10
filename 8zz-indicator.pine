@@ -1,0 +1,242 @@
+// This Pine Script™ is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © hansai-art / Group.G
+// 8zz Banini Reverse Indicator
+// 免責聲明：本指標僅供娛樂參考，不構成任何投資建議。
+
+//@version=6
+indicator("8zz反指標", overlay=true, max_labels_count=500, timeframe="", timeframe_gaps=false)
+
+// ============================================================
+// 設定
+// ============================================================
+grp1 = "顯示"
+offset_pct = input.float(2.0, "箭頭距離 %", minval=0.5, maxval=5.0, step=0.1, group=grp1)
+showDots = input.bool(false, "顯示加倉圓點", group=grp1, tooltip="開啟後同方向訊號會顯示小圓點")
+showPanel = input.bool(true, "顯示資訊面板", group=grp1)
+
+grp2 = "回測"
+holdBars = input.int(5, "觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="翻轉後幾根K棒判定勝敗\n1小時線: 5=5小時 | 日線: 5=一週")
+
+// ============================================================
+// 事件資料 (33筆)
+// ============================================================
+var int[]    evt_time = array.new_int(0)
+var int[]    evt_dir  = array.new_int(0)
+var string[] evt_tips = array.new_string(0)
+
+if barstate.isfirst
+    array.push(evt_time, 1770600540000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損賣出 | 鈦昇\n指標: 偏多 ▲\nFB 2/9 09:29")
+
+    array.push(evt_time, 1770635400000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損賣出\n指標: 偏多 ▲\nFB 2/9 19:10 大盤漲800 我跌8%")
+
+    array.push(evt_time, 1770775080000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 台積電(2330)\n指標: 偏空 ▼\nFB 2/11 09:58")
+
+    array.push(evt_time, 1770782580000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 群創(3481)\n指標: 偏空 ▼\nFB 2/11 12:03")
+
+    array.push(evt_time, 1771953120000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | TSM\n指標: 偏空 ▼\nFB 2/25 01:12")
+
+    array.push(evt_time, 1772688720000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 美光(MU)\n指標: 偏空 ▼\nFB 3/5 13:32")
+
+    array.push(evt_time, 1773019440000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "被套 | 抄底虧7位數\n指標: 偏空 ▼\nFB 3/9 09:24")
+
+    array.push(evt_time, 1773106080000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損賣出\n指標: 偏多 ▲\nFB 3/10 09:28 一次19%")
+
+    array.push(evt_time, 1773192240000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "抄底買進\n指標: 偏空 ▼\nFB 3/11 09:24 相信光！")
+
+    array.push(evt_time, 1773421380000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損賣出\n指標: 偏多 ▲\nFB 3/14 01:03 壯烈犧牲")
+
+    array.push(evt_time, 1773592080000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "加碼 | 旺宏\n指標: 偏空 ▼\nFB 3/16 00:28 不停損 只攤平!")
+
+    array.push(evt_time, 1773912720000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "賣出 | 白銀\n指標: 偏多 ▲\nFB 3/19 17:32")
+
+    array.push(evt_time, 1773969420000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "減碼 | 白銀\n指標: 偏多 ▲\nFB 3/20 09:17")
+
+    array.push(evt_time, 1774226940000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "出清 | 個股+白銀\n指標: 偏多 ▲\nFB 3/23 08:49")
+
+    array.push(evt_time, 1774264320000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損 | 白銀\n指標: 偏多 ▲\nFB 3/23 19:12")
+
+    array.push(evt_time, 1774399440000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損 | 旺宏\n指標: 偏多 ▲\nFB 3/25 08:44")
+
+    array.push(evt_time, 1774401960000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 華星光\n指標: 偏空 ▼\nFB 3/25 09:26")
+
+    array.push(evt_time, 1774490460000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "持有看多 | 美光(MU)\n指標: 偏空 ▼\nFB 3/26 10:01")
+
+    array.push(evt_time, 1774587180000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "出清停損 | 華星光+記憶體\n指標: 偏多 ▲\nFB 3/27 12:53")
+
+    array.push(evt_time, 1774832640000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 期S&P石油\n指標: 偏空 ▼\nFB 3/30 09:04")
+
+    array.push(evt_time, 1774843560000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "觀望 | 鈦昇\n指標: 偏空 ▼\nFB 3/30 12:06")
+
+    array.push(evt_time, 1774921140000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "賣華星光+買鈦昇\n指標: 偏空 ▼\nFB 3/31 09:39")
+
+    array.push(evt_time, 1774936560000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "被套 | 抄底越抄越底\n指標: 偏空 ▼\nFB 3/31 13:56")
+
+    array.push(evt_time, 1775010480000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 0050\n指標: 偏空 ▼\nFB 4/1 10:28")
+
+    array.push(evt_time, 1775093460000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | QQQ+0050\n指標: 偏空 ▼\nFB 4/2 09:31 成交74.90")
+
+    array.push(evt_time, 1775139840000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損 | MU\n指標: 偏多 ▲\nFB 4/2 22:24 分段停損")
+
+    array.push(evt_time, 1775527320000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 布蘭特正2+石油\n指標: 偏空 ▼\nFB 4/7 10:02")
+
+    array.push(evt_time, 1775608020000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "被套 | 布蘭特正2\n指標: 偏空 ▼\nFB 4/8 08:27")
+
+    array.push(evt_time, 1775610900000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "加碼 | 布蘭特正2\n指標: 偏空 ▼\nFB 4/8 09:15")
+
+    array.push(evt_time, 1775697840000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "停損鈦昇+買信驊\n指標: 偏多 ▲\nFB 4/9 09:24")
+
+    array.push(evt_time, 1775708100000)
+    array.push(evt_dir, 1)
+    array.push(evt_tips, "驗證 | 鈦昇漲停\n指標: 偏多 ▲\nFB 4/9 12:15")
+
+    array.push(evt_time, 1775786640000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "買進 | 台光電+亞翔\n指標: 偏空 ▼\nFB 4/10 10:04")
+
+    array.push(evt_time, 1775792400000)
+    array.push(evt_dir, -1)
+    array.push(evt_tips, "持有 | 台光電\n指標: 偏空 ▼\nFB 4/10 11:40")
+
+// ============================================================
+// 主邏輯
+// ============================================================
+var int currentDir = 0
+var int posCount = 0
+var int flipBar = 0
+var float flipPrice = 0.0
+var int flipDir = 0
+var int wins = 0
+var int losses = 0
+var int totalFlips = 0
+
+// 觀察窗到期結算
+if totalFlips > 0 and currentDir != 0 and bar_index - flipBar == holdBars
+    float pnl = flipDir == 1 ? close - flipPrice : flipPrice - close
+    if pnl > 0
+        wins += 1
+    else
+        losses += 1
+
+if array.size(evt_time) > 0
+    for i = 0 to array.size(evt_time) - 1
+        if time >= array.get(evt_time, i) and time[1] < array.get(evt_time, i)
+            int d = array.get(evt_dir, i)
+            string tip = array.get(evt_tips, i)
+            float gap = (high - low) * offset_pct
+            bool isFlip = d != currentDir
+
+            if isFlip
+                currentDir := d
+                posCount := 1
+                flipBar := bar_index
+                flipPrice := close
+                flipDir := d
+                totalFlips += 1
+
+                if d == 1
+                    label.new(bar_index, low - gap, "▲",
+                         color=color.new(color.black, 100),
+                         textcolor=#00E676,
+                         style=label.style_label_up,
+                         size=size.huge,
+                         tooltip=tip)
+                else
+                    label.new(bar_index, high + gap, "▼",
+                         color=color.new(color.black, 100),
+                         textcolor=#FF1744,
+                         style=label.style_label_down,
+                         size=size.huge,
+                         tooltip=tip)
+            else
+                posCount := math.min(posCount + 1, 5)
+                if showDots
+                    color dotCol = d == 1 ? #00E676 : #FF1744
+                    float dotY = d == 1 ? low - gap * 0.3 : high + gap * 0.3
+                    label.new(bar_index, dotY, "",
+                         color=dotCol,
+                         style=label.style_circle,
+                         size=size.tiny,
+                         tooltip=tip)
+
+// ============================================================
+// 資訊面板
+// ============================================================
+if showPanel
+    var table t = table.new(position.top_right, 2, 5, bgcolor=color.new(#1e1e1e, 10), border_color=color.new(#555555, 0), border_width=1)
+    if barstate.islast
+        string dirStr = currentDir == 1 ? "偏多 ▲" : currentDir == -1 ? "偏空 ▼" : "等訊號"
+        color dirCol = currentDir == 1 ? #00E676 : currentDir == -1 ? #FF1744 : color.gray
+        int judged = wins + losses
+        float winRate = judged > 0 ? wins / judged * 100 : 0
+        color wrCol = winRate >= 60 ? #00E676 : winRate >= 40 ? #ffeb3b : #FF1744
+
+        table.cell(t, 0, 0, "8zz 反指標", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
+        table.cell(t, 1, 0, dirStr, text_color=dirCol, text_size=size.normal)
+        table.cell(t, 0, 1, "倉位", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 1, str.tostring(posCount) + "/5 (" + str.tostring(posCount * 20) + "%)", text_color=color.white, text_size=size.small)
+        table.cell(t, 0, 2, "勝率", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 2, str.tostring(winRate, "#.0") + "% (" + str.tostring(wins) + "W " + str.tostring(losses) + "L)", text_color=wrCol, text_size=size.small)
+        table.cell(t, 0, 3, "觀察窗", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 3, str.tostring(holdBars) + " bars", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 0, 4, "翻轉次數", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 4, str.tostring(totalFlips), text_color=color.gray, text_size=size.tiny)
