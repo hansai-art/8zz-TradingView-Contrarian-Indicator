@@ -180,7 +180,7 @@
 ### 方法二：手動貼上 Pine Script
 
 1. 開啟 [TradingView](https://www.tradingview.com) → Pine Script 編輯器
-2. 複製 [`/home/runner/work/8zz-Contrarian-Indicator-TradingView/8zz-Contrarian-Indicator-TradingView/8zz-indicator.pine`](/home/runner/work/8zz-Contrarian-Indicator-TradingView/8zz-Contrarian-Indicator-TradingView/8zz-indicator.pine) 的全部內容
+2. 複製 [`8zz-indicator.pine`](./8zz-indicator.pine) 的全部內容
 3. 貼入編輯器 → 儲存 → 加到圖表
 
 ---
