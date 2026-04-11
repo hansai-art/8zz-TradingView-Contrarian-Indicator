@@ -511,6 +511,7 @@ ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
 ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
 validityText = effectiveDir == 0 ? (isSignalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
 filterCompact = formatFilterSummary(useTrendFilter, activeTrendOk, useRsiFilter, activeRsiOk, useVolFilter, volatilityOk, useHtfConfirm, activeHtfOk)
+positionPctText = str.tostring((posCount * 100.0) / maxPyramid, "#.0")
 
 if showPanel
     pos = panelPos == "右上" ? position.top_right : position.bottom_right
@@ -533,7 +534,7 @@ if showPanel
         table.cell(t, 0, 1, "方向", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 1, dashboardDirectionLabel, text_color=dirCol, text_size=size.normal)
         table.cell(t, 0, 2, "倉位", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + str.tostring((posCount * 100.0) / maxPyramid, "#.0") + "%)", text_color=color.white, text_size=size.small)
+        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + positionPctText + "%)", text_color=color.white, text_size=size.small)
         table.cell(t, 0, 3, "訊號品質", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 3, qualityText, text_color=qualityCol, text_size=size.small)
         table.cell(t, 0, 4, "訊號年齡", text_color=color.gray, text_size=size.tiny)
