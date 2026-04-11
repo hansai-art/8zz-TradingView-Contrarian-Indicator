@@ -1,4 +1,4 @@
-# 8zz 情緒反轉框架｜Community Edition
+# 8zz 情緒反轉框架 | Community Edition
 
 > **免責聲明：本指標僅供娛樂參考，不構成任何投資建議。**
 >  

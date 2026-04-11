@@ -89,6 +89,9 @@ formatSignalAge(eventTime, isSignalExpired, eventAgeHours) =>
     else
         "48 小時以上"
 
+formatFilterSummary(useTrendFilter, trendOk, useRsiFilter, rsiOk, useVolFilter, volatilityOk, useHtfConfirm, htfOk) =>
+    "EMA " + filterBadge(useTrendFilter, trendOk) + " / RSI " + filterBadge(useRsiFilter, rsiOk) + " / ATR " + filterBadge(useVolFilter, volatilityOk) + " / HTF " + filterBadge(useHtfConfirm, htfOk)
+
 var int[] evt_time = array.new_int(0)
 var int[] evt_dir = array.new_int(0)
 var int[] evt_str = array.new_int(0)
@@ -405,7 +408,7 @@ if array.size(evt_time) > 0
             rsiOk = d == 1 ? rsiLongOk : rsiShortOk
             htfOk = d == 1 ? htfLongOk : htfShortOk
             passFilters = (not useTrendFilter or trendOk) and (not useRsiFilter or rsiOk) and (not useVolFilter or volatilityOk) and (not useHtfConfirm or htfOk)
-            filterText = "EMA " + filterBadge(useTrendFilter, trendOk) + " / RSI " + filterBadge(useRsiFilter, rsiOk) + " / ATR " + filterBadge(useVolFilter, volatilityOk) + " / HTF " + filterBadge(useHtfConfirm, htfOk)
+            filterText = formatFilterSummary(useTrendFilter, trendOk, useRsiFilter, rsiOk, useVolFilter, volatilityOk, useHtfConfirm, htfOk)
             baseScore = 35.0 + s * 15.0 + profileBias(assetProfile)
             filterScore = (useTrendFilter ? (trendOk ? TREND_FILTER_BONUS : TREND_FILTER_PENALTY) : 0.0) + (useRsiFilter ? (rsiOk ? RSI_FILTER_BONUS : RSI_FILTER_PENALTY) : 0.0) + (useVolFilter ? (volatilityOk ? VOL_FILTER_BONUS : VOL_FILTER_PENALTY) : 0.0) + (useHtfConfirm ? (htfOk ? HTF_FILTER_BONUS : HTF_FILTER_PENALTY) : 0.0)
             score = clampFloat(baseScore + filterScore, 0, 100)
@@ -506,7 +509,7 @@ qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + 
 ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
 ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
 validityText = effectiveDir == 0 ? (isSignalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
-filterCompact = "EMA " + filterBadge(useTrendFilter, activeTrendOk) + " · RSI " + filterBadge(useRsiFilter, activeRsiOk) + " · ATR " + filterBadge(useVolFilter, volatilityOk) + " · HTF " + filterBadge(useHtfConfirm, activeHtfOk)
+filterCompact = formatFilterSummary(useTrendFilter, activeTrendOk, useRsiFilter, activeRsiOk, useVolFilter, volatilityOk, useHtfConfirm, activeHtfOk)
 
 if showPanel
     pos = panelPos == "右上" ? position.top_right : position.bottom_right
@@ -529,7 +532,8 @@ if showPanel
         table.cell(t, 0, 1, "方向", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 1, dashboardDirectionLabel, text_color=dirCol, text_size=size.normal)
         table.cell(t, 0, 2, "倉位", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + str.tostring(maxPyramid > 0 ? posCount * 100.0 / maxPyramid : 0, "#.0") + "%)", text_color=color.white, text_size=size.small)
+        positionPctText = str.tostring(maxPyramid > 0 ? posCount * 100.0 / maxPyramid : 0, "#.0")
+        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + positionPctText + "%)", text_color=color.white, text_size=size.small)
         table.cell(t, 0, 3, "訊號品質", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 3, qualityText, text_color=qualityCol, text_size=size.small)
         table.cell(t, 0, 4, "訊號年齡", text_color=color.gray, text_size=size.tiny)
