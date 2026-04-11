@@ -1,11 +1,11 @@
 // This Pine Script™ is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © hansai-art / Group.G
-// 8zz Banini Reverse Indicator
+// 8zz Sentiment Reversal Framework [Community]
 // 事件: 63筆 | 期間: 2025/12 ~ 2026/04
 // 免責聲明：本指標僅供娛樂參考，不構成任何投資建議。
 
 //@version=6
-indicator("8zz反指標", overlay=true, max_labels_count=500)
+indicator("8zz 情緒反轉框架 [Community]", overlay=true, max_labels_count=500)
 
 grp1 = "顯示"
 offset_atr = input.float(0.5, "箭頭距離 (ATR倍數)", minval=0.1, maxval=3.0, step=0.1, group=grp1, tooltip="越小越貼近K棒 建議0.3~0.8")
@@ -14,10 +14,62 @@ showBg     = input.bool(true, "顯示背景色帶", group=grp1)
 showPanel  = input.bool(true, "顯示資訊面板", group=grp1)
 panelPos   = input.string("右下", "資訊面板位置", options=["右上", "右下"], group=grp1)
 
-grp2 = "回測"
+grp2 = "訊號治理"
 holdBars = input.int(8, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
+signalLifeBars = input.int(24, "訊號有效K棒", minval=1, maxval=200, group=grp2, tooltip="超過此 K 棒數後，訊號視為過期，只保留歷史標記")
+showFilteredMarks = input.bool(false, "顯示被濾掉的原始訊號", group=grp2)
+
+grp3 = "濾網"
+useTrendFilter = input.bool(true, "EMA 趨勢濾網", group=grp3)
+emaLen = input.int(55, "EMA 長度", minval=5, maxval=300, group=grp3)
+useRsiFilter = input.bool(false, "RSI 動能濾網", group=grp3)
+rsiLen = input.int(14, "RSI 長度", minval=2, maxval=100, group=grp3)
+useVolFilter = input.bool(false, "ATR 波動濾網", group=grp3)
+atrLen = input.int(14, "ATR 長度", minval=2, maxval=100, group=grp3)
+minAtrPct = input.float(1.0, "最低 ATR 波動率 (%)", minval=0.1, maxval=20.0, step=0.1, group=grp3)
+useHtfConfirm = input.bool(false, "高週期結構確認", group=grp3)
+htfTf = input.timeframe("240", "確認週期", group=grp3)
+
+grp4 = "執行"
+assetProfile = input.string("台股個股", "標的類型", options=["ETF", "台股個股", "美股個股", "商品"], group=grp4)
+baseRiskPct = input.float(20.0, "基礎建議倉位 (%)", minval=5.0, maxval=100.0, step=5.0, group=grp4)
+maxPyramid = input.int(5, "最大加碼次數", minval=1, maxval=5, group=grp4)
 
 float gap = ta.atr(14) * offset_atr
+emaBasis = ta.ema(close, emaLen)
+rsiValue = ta.rsi(close, rsiLen)
+atrPct = ta.atr(atrLen) / close * 100.0
+htfClose = request.security(syminfo.tickerid, htfTf, close)
+htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, emaLen))
+
+clampFloat(value, minValue, maxValue) =>
+    math.max(minValue, math.min(maxValue, value))
+
+profileBias(profile) =>
+    switch profile
+        "台股個股" => 8.0
+        "美股個股" => 3.0
+        "ETF" => -8.0
+        => -4.0
+
+profileStopAtr(profile) =>
+    switch profile
+        "台股個股" => 1.5
+        "美股個股" => 1.7
+        "ETF" => 1.8
+        => 2.2
+
+qualityLabel(score) =>
+    score >= 80 ? "A" : score >= 65 ? "B" : score >= 50 ? "C" : "D"
+
+positionFactor(score) =>
+    score >= 80 ? 1.0 : score >= 65 ? 0.75 : score >= 50 ? 0.5 : 0.25
+
+filterBadge(enabled, ok) =>
+    not enabled ? "關" : ok ? "通過" : "阻擋"
+
+statusColor(enabled, ok) =>
+    not enabled ? color.gray : ok ? #00E676 : #FF1744
 
 var int[] evt_time = array.new_int(0)
 var int[] evt_dir = array.new_int(0)
@@ -284,15 +336,43 @@ var int flipBar = 0
 var float flipPrice = 0.0
 var int flipDir = 0
 var int lastEvtTime = 0
+var int lastSignalBar = na
+var float lastSignalScore = na
 var int winsA = 0
 var int lossesA = 0
 var int winsB = 0
 var int lossesB = 0
+var float pnlSumA = 0.0
+var float pnlSumB = 0.0
 var int totalFlips = 0
+var int[] recentB = array.new_int(0)
+var int totalHoldBarsB = 0
+
+trendLongOk = close > emaBasis and emaBasis >= emaBasis[1]
+trendShortOk = close < emaBasis and emaBasis <= emaBasis[1]
+rsiLongOk = rsiValue >= 50
+rsiShortOk = rsiValue <= 50
+volatilityOk = atrPct >= minAtrPct
+htfLongOk = htfClose >= htfEma
+htfShortOk = htfClose <= htfEma
+
+barsSinceSignal = not na(lastSignalBar) ? bar_index - lastSignalBar : na
+remainingBars = not na(barsSinceSignal) ? math.max(signalLifeBars - barsSinceSignal, 0) : na
+agedScore = not na(lastSignalScore) and not na(barsSinceSignal) ? clampFloat(lastSignalScore - barsSinceSignal * 25.0 / signalLifeBars, 0, 100) : na
+signalExpired = currentDir != 0 and not na(remainingBars) and remainingBars <= 0
+effectiveDir = signalExpired ? 0 : currentDir
+expiredNow = signalExpired and not nz(signalExpired[1], false)
+
+bool flipSignalNow = false
+bool addSignalNow = false
+bool filteredSignalNow = false
+int alertDir = 0
+var string lastFilterText = "等待事件"
 
 if totalFlips > 0 and currentDir != 0 and bar_index - flipBar == holdBars
-    float pnl = flipDir == 1 ? close - flipPrice : flipPrice - close
-    if pnl > 0
+    pnlPctA = (flipDir == 1 ? close - flipPrice : flipPrice - close) / flipPrice * 100
+    pnlSumA += pnlPctA
+    if pnlPctA > 0
         winsA += 1
     else
         lossesA += 1
@@ -300,89 +380,156 @@ if totalFlips > 0 and currentDir != 0 and bar_index - flipBar == holdBars
 if array.size(evt_time) > 0
     for i = 0 to array.size(evt_time) - 1
         if time >= array.get(evt_time, i) and time[1] < array.get(evt_time, i)
-            int d = array.get(evt_dir, i)
-            int s = array.get(evt_str, i)
-            string tip = array.get(evt_tips, i)
-            bool isFlip = d != currentDir
-            lastEvtTime := array.get(evt_time, i)
+            d = array.get(evt_dir, i)
+            s = array.get(evt_str, i)
+            tip = array.get(evt_tips, i)
+            trendOk = d == 1 ? trendLongOk : trendShortOk
+            rsiOk = d == 1 ? rsiLongOk : rsiShortOk
+            htfOk = d == 1 ? htfLongOk : htfShortOk
+            passFilters = (not useTrendFilter or trendOk) and (not useRsiFilter or rsiOk) and (not useVolFilter or volatilityOk) and (not useHtfConfirm or htfOk)
+            filterText = "EMA " + filterBadge(useTrendFilter, trendOk) + " / RSI " + filterBadge(useRsiFilter, rsiOk) + " / ATR " + filterBadge(useVolFilter, volatilityOk) + " / HTF " + filterBadge(useHtfConfirm, htfOk)
+            baseScore = 35.0 + s * 15.0 + profileBias(assetProfile)
+            filterScore = (useTrendFilter ? (trendOk ? 8.0 : -18.0) : 0.0) + (useRsiFilter ? (rsiOk ? 6.0 : -12.0) : 0.0) + (useVolFilter ? (volatilityOk ? 4.0 : -10.0) : 0.0) + (useHtfConfirm ? (htfOk ? 10.0 : -18.0) : 0.0)
+            score = clampFloat(baseScore + filterScore, 0, 100)
+            richTip = tip + "\n品質分數: " + str.tostring(score, "#.0") + " (" + qualityLabel(score) + ")" + "\n濾網: " + filterText + "\n建議倉位: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "%"
 
-            if isFlip
-                if totalFlips > 0
-                    float pnlB = flipDir == 1 ? close - flipPrice : flipPrice - close
-                    if pnlB > 0
-                        winsB += 1
+            lastFilterText := filterText
+            if passFilters
+                alertDir := d
+                lastEvtTime := array.get(evt_time, i)
+                lastSignalBar := bar_index
+                lastSignalScore := score
+                isFlip = d != currentDir
+
+                if isFlip
+                    if totalFlips > 0
+                        pnlPctB = (flipDir == 1 ? close - flipPrice : flipPrice - close) / flipPrice * 100
+                        pnlSumB += pnlPctB
+                        totalHoldBarsB += bar_index - flipBar
+                        if pnlPctB > 0
+                            winsB += 1
+                            array.push(recentB, 1)
+                        else
+                            lossesB += 1
+                            array.push(recentB, 0)
+                        if array.size(recentB) > 20
+                            array.shift(recentB)
+                    currentDir := d
+                    posCount := 1
+                    flipBar := bar_index
+                    flipPrice := close
+                    flipDir := d
+                    totalFlips += 1
+                    flipSignalNow := true
+                    labelSize = s == 3 ? size.huge : s == 2 ? size.large : size.normal
+                    if d == 1
+                        label.new(bar_index, low - gap, "▲",
+                             color=color.new(color.black, 100),
+                             textcolor=#00E676,
+                             style=label.style_label_up,
+                             size=labelSize,
+                             tooltip=richTip)
                     else
-                        lossesB += 1
-                currentDir := d
-                posCount := 1
-                flipBar := bar_index
-                flipPrice := close
-                flipDir := d
-                totalFlips += 1
-                string labelSize = s == 3 ? size.huge : s == 2 ? size.large : size.normal
-                if d == 1
-                    label.new(bar_index, low - gap, "▲",
-                         color=color.new(color.black, 100),
-                         textcolor=#00E676,
-                         style=label.style_label_up,
-                         size=labelSize,
-                         tooltip=tip)
+                        label.new(bar_index, high + gap, "▼",
+                             color=color.new(color.black, 100),
+                             textcolor=#FF1744,
+                             style=label.style_label_down,
+                             size=labelSize,
+                             tooltip=richTip)
                 else
-                    label.new(bar_index, high + gap, "▼",
-                         color=color.new(color.black, 100),
-                         textcolor=#FF1744,
-                         style=label.style_label_down,
-                         size=labelSize,
-                         tooltip=tip)
+                    posCount := math.min(posCount + 1, maxPyramid)
+                    addSignalNow := true
+                    if showDots
+                        dotCol = d == 1 ? color.new(#00E676, 50) : color.new(#FF1744, 50)
+                        dotY = d == 1 ? low - gap * 2 : high + gap * 2
+                        label.new(bar_index, dotY, d == 1 ? "▲" : "▼",
+                             color=color.new(color.black, 100),
+                             textcolor=dotCol,
+                             style=d == 1 ? label.style_label_up : label.style_label_down,
+                             size=size.large,
+                             tooltip=richTip)
             else
-                posCount := math.min(posCount + 1, 5)
-                if showDots
-                    color dotCol = d == 1 ? color.new(#00E676, 50) : color.new(#FF1744, 50)
-                    float dotY = d == 1 ? low - gap * 2 : high + gap * 2
-                    label.new(bar_index, dotY, d == 1 ? "▲" : "▼",
+                filteredSignalNow := true
+                if showFilteredMarks
+                    label.new(bar_index, d == 1 ? low - gap : high + gap, "×",
                          color=color.new(color.black, 100),
-                         textcolor=dotCol,
+                         textcolor=color.new(color.gray, 0),
                          style=d == 1 ? label.style_label_up : label.style_label_down,
-                         size=size.large,
-                         tooltip=tip)
+                         size=size.small,
+                         tooltip=tip + "\n原始事件遭濾網擋下\n" + filterText)
 
 color bgCol = na
-if showBg and currentDir == 1
+if showBg and effectiveDir == 1
     bgCol := color.new(#00E676, 95)
-if showBg and currentDir == -1
+if showBg and effectiveDir == -1
     bgCol := color.new(#FF1744, 95)
 bgcolor(bgCol)
 
+avgPnlA = winsA + lossesA > 0 ? pnlSumA / (winsA + lossesA) : na
+avgPnlB = winsB + lossesB > 0 ? pnlSumB / (winsB + lossesB) : na
+avgHoldB = winsB + lossesB > 0 ? totalHoldBarsB * 1.0 / (winsB + lossesB) : na
+recentWinB = na
+if array.size(recentB) > 0
+    recentWins = 0
+    for i = 0 to array.size(recentB) - 1
+        recentWins += array.get(recentB, i)
+    recentWinB := recentWins / array.size(recentB) * 100
+
+activeTrendOk = effectiveDir == 1 ? trendLongOk : effectiveDir == -1 ? trendShortOk : true
+activeRsiOk = effectiveDir == 1 ? rsiLongOk : effectiveDir == -1 ? rsiShortOk : true
+activeHtfOk = effectiveDir == 1 ? htfLongOk : effectiveDir == -1 ? htfShortOk : true
+riskPct = effectiveDir == 0 or na(agedScore) ? 0.0 : baseRiskPct * positionFactor(agedScore)
+stopAtr = profileStopAtr(assetProfile)
+riskText = effectiveDir == 0 ? "等待下一筆翻轉" : str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批 2-3 段"
+qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + qualityLabel(agedScore) + ")" : "尚無"
+ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
+ageText = lastEvtTime <= 0 ? "尚無事件" : signalExpired ? "已過期" : not na(ageHours) and ageHours < 1 ? str.tostring(ageHours * 60, "#") + " 分鐘前" : not na(ageHours) and ageHours < 48 ? str.tostring(ageHours, "#.0") + " 小時前" : "已過期"
+validityText = effectiveDir == 0 ? (signalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
+filterCompact = "EMA " + filterBadge(useTrendFilter, activeTrendOk) + " · RSI " + filterBadge(useRsiFilter, activeRsiOk) + " · ATR " + filterBadge(useVolFilter, volatilityOk) + " · HTF " + filterBadge(useHtfConfirm, activeHtfOk)
+
 if showPanel
-    string pos = panelPos == "右上" ? position.top_right : position.bottom_right
-    var table t = table.new(pos, 2, 8, bgcolor=color.new(#1e1e1e, 10), border_color=color.new(#555555, 0), border_width=1)
+    pos = panelPos == "右上" ? position.top_right : position.bottom_right
+    var table t = table.new(pos, 2, 12, bgcolor=color.new(#111111, 5), border_color=color.new(#555555, 0), border_width=1)
     if barstate.islast
-        string dirStr = currentDir == 1 ? "偏多 ▲" : currentDir == -1 ? "偏空 ▼" : "等訊號"
-        color dirCol = currentDir == 1 ? #00E676 : currentDir == -1 ? #FF1744 : color.gray
-        int judgedA = winsA + lossesA
-        float winRateA = judgedA > 0 ? winsA / judgedA * 100 : 0
-        color wrColA = winRateA >= 60 ? #00E676 : winRateA >= 40 ? #ffeb3b : #FF1744
-        int judgedB = winsB + lossesB
-        float winRateB = judgedB > 0 ? winsB / judgedB * 100 : 0
-        color wrColB = winRateB >= 60 ? #00E676 : winRateB >= 40 ? #ffeb3b : #FF1744
-        float ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : 0
-        string ageStr = ageHours < 1 ? str.tostring(ageHours * 60, "#") + " 分鐘前" : ageHours < 48 ? str.tostring(ageHours, "#.0") + " 小時前" : "已過期"
-        color ageCol = ageHours < 24 ? color.white : ageHours < 48 ? #ffeb3b : color.gray
-        table.cell(t, 0, 0, "8zz 反指標", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
-        table.cell(t, 1, 0, dirStr, text_color=dirCol, text_size=size.normal)
-        table.cell(t, 0, 1, "倉位", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 1, str.tostring(posCount) + "/5 (" + str.tostring(posCount * 20) + "%)", text_color=color.white, text_size=size.small)
-        table.cell(t, 0, 2, "訊號年齡", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 2, ageStr, text_color=ageCol, text_size=size.small)
-        table.cell(t, 0, 3, "翻轉次數", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 3, str.tostring(totalFlips), text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 0, 4, "勝率比較", text_color=color.white, text_size=size.tiny, bgcolor=color.new(#333333, 0))
-        table.cell(t, 1, 4, "", bgcolor=color.new(#333333, 0))
-        table.cell(t, 0, 5, "固定" + str.tostring(holdBars) + "棒", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 5, str.tostring(winRateA, "#.0") + "% (" + str.tostring(winsA) + "W " + str.tostring(lossesA) + "L)", text_color=wrColA, text_size=size.small)
-        table.cell(t, 0, 6, "翻轉平倉", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 6, str.tostring(winRateB, "#.0") + "% (" + str.tostring(winsB) + "W " + str.tostring(lossesB) + "L)", text_color=wrColB, text_size=size.small)
-        string suggest = winRateB > winRateA ? "建議: 跟著翻轉操作" : winRateA > winRateB ? "建議: 固定" + str.tostring(holdBars) + "棒平倉" : "兩者差不多"
-        color sugCol = winRateB > winRateA ? #00E676 : winRateA > winRateB ? #ffeb3b : color.gray
-        table.cell(t, 0, 7, suggest, text_color=sugCol, text_size=size.tiny)
-        table.cell(t, 1, 7, "", text_color=sugCol, text_size=size.tiny)
+        dirStr = effectiveDir == 1 ? "偏多 ▲" : effectiveDir == -1 ? "偏空 ▼" : signalExpired ? "訊號過期" : "等訊號"
+        dirCol = effectiveDir == 1 ? #00E676 : effectiveDir == -1 ? #FF1744 : color.gray
+        judgedA = winsA + lossesA
+        winRateA = judgedA > 0 ? winsA / judgedA * 100 : 0
+        wrColA = winRateA >= 60 ? #00E676 : winRateA >= 40 ? #ffeb3b : #FF1744
+        judgedB = winsB + lossesB
+        winRateB = judgedB > 0 ? winsB / judgedB * 100 : 0
+        wrColB = winRateB >= 60 ? #00E676 : winRateB >= 40 ? #ffeb3b : #FF1744
+        qualityCol = not na(agedScore) ? agedScore >= 80 ? #00E676 : agedScore >= 65 ? #ffeb3b : #FF7043 : color.gray
+        ageCol = signalExpired ? color.gray : not na(ageHours) and ageHours < 24 ? color.white : #ffeb3b
+        suggest = winRateB > winRateA ? "建議: 用翻轉平倉作主策略" : winRateA > winRateB ? "建議: 固定 " + str.tostring(holdBars) + " 棒出場" : "建議: 兩者差不多，優先看品質分數"
+        sugCol = winRateB > winRateA ? #00E676 : winRateA > winRateB ? #ffeb3b : color.gray
+        table.cell(t, 0, 0, "8zz 情緒反轉框架 [Community]", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
+        table.cell(t, 1, 0, assetProfile, text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
+        table.cell(t, 0, 1, "方向", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 1, dirStr, text_color=dirCol, text_size=size.normal)
+        table.cell(t, 0, 2, "倉位", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + str.tostring(posCount * 100 / maxPyramid) + "%)", text_color=color.white, text_size=size.small)
+        table.cell(t, 0, 3, "訊號品質", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 3, qualityText, text_color=qualityCol, text_size=size.small)
+        table.cell(t, 0, 4, "訊號年齡", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 4, ageText, text_color=ageCol, text_size=size.small)
+        table.cell(t, 0, 5, "有效期", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 5, validityText, text_color=signalExpired ? color.gray : color.white, text_size=size.small)
+        table.cell(t, 0, 6, "風控", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 6, riskText, text_color=color.white, text_size=size.small)
+        table.cell(t, 0, 7, "濾網", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 7, filterCompact, text_color=color.white, text_size=size.tiny)
+        table.cell(t, 0, 8, "固定 " + str.tostring(holdBars) + " 棒", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 8, str.tostring(winRateA, "#.0") + "% / Avg " + (na(avgPnlA) ? "n/a" : str.tostring(avgPnlA, "#.2") + "%"), text_color=wrColA, text_size=size.small)
+        table.cell(t, 0, 9, "翻轉平倉", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 9, str.tostring(winRateB, "#.0") + "% / Avg " + (na(avgPnlB) ? "n/a" : str.tostring(avgPnlB, "#.2") + "%"), text_color=wrColB, text_size=size.small)
+        table.cell(t, 0, 10, "最近 20 筆 / 平均持有", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 10, (na(recentWinB) ? "n/a" : str.tostring(recentWinB, "#.0") + "%") + " / " + (na(avgHoldB) ? "n/a" : str.tostring(avgHoldB, "#.1") + " bars"), text_color=color.white, text_size=size.small)
+        table.cell(t, 0, 11, suggest, text_color=sugCol, text_size=size.tiny)
+        table.cell(t, 1, 11, lastFilterText, text_color=color.gray, text_size=size.tiny)
+
+alertcondition(flipSignalNow and alertDir == 1, "8zz 多頭翻轉", "8zz 社群情緒反轉框架出現偏多翻轉訊號")
+alertcondition(flipSignalNow and alertDir == -1, "8zz 空頭翻轉", "8zz 社群情緒反轉框架出現偏空翻轉訊號")
+alertcondition(addSignalNow, "8zz 同向加碼", "8zz 社群情緒反轉框架出現同向加碼訊號")
+alertcondition(filteredSignalNow, "8zz 原始事件遭濾網擋下", "有事件觸發，但被目前濾網條件擋下")
+alertcondition(expiredNow, "8zz 訊號失效", "目前有效訊號已過期，等待下一次翻轉")
