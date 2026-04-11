@@ -83,7 +83,7 @@
 
 ## Community vs Paid 路線
 
-| 模組 | Community Edition | Pro（規劃） | Elite（規劃） |
+| 模組 | Community Edition | Pro （規劃） | Elite （規劃） |
 |------|-------------------|------------|---------------|
 | 基礎翻轉訊號 | ✅ | ✅ | ✅ |
 | 訊號品質分數 | ✅ | ✅ | ✅ |
