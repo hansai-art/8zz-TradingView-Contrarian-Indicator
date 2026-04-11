@@ -42,6 +42,15 @@ atrPct = ta.atr(atrLen) / close * 100.0
 htfClose = request.security(syminfo.tickerid, htfTf, close)
 htfEma = request.security(syminfo.tickerid, htfTf, ta.ema(close, emaLen))
 
+TREND_FILTER_BONUS = 8.0
+TREND_FILTER_PENALTY = -18.0
+RSI_FILTER_BONUS = 6.0
+RSI_FILTER_PENALTY = -12.0
+VOL_FILTER_BONUS = 4.0
+VOL_FILTER_PENALTY = -10.0
+HTF_FILTER_BONUS = 10.0
+HTF_FILTER_PENALTY = -18.0
+
 clampFloat(value, minValue, maxValue) =>
     math.max(minValue, math.min(maxValue, value))
 
@@ -65,11 +74,20 @@ qualityLabel(score) =>
 positionFactor(score) =>
     score >= 80 ? 1.0 : score >= 65 ? 0.75 : score >= 50 ? 0.5 : 0.25
 
-filterBadge(enabled, ok) =>
-    not enabled ? "關" : ok ? "通過" : "阻擋"
+filterBadge(enabled, isFilterPassed) =>
+    not enabled ? "關" : isFilterPassed ? "通過" : "阻擋"
 
-statusColor(enabled, ok) =>
-    not enabled ? color.gray : ok ? #00E676 : #FF1744
+formatSignalAge(eventTime, isSignalExpired, eventAgeHours) =>
+    if eventTime <= 0
+        "尚無事件"
+    else if isSignalExpired
+        "已過期"
+    else if not na(eventAgeHours) and eventAgeHours < 1
+        str.tostring(eventAgeHours * 60, "#") + " 分鐘前"
+    else if not na(eventAgeHours) and eventAgeHours < 48
+        str.tostring(eventAgeHours, "#.0") + " 小時前"
+    else
+        "已過期"
 
 var int[] evt_time = array.new_int(0)
 var int[] evt_dir = array.new_int(0)
@@ -359,9 +377,9 @@ htfShortOk = htfClose <= htfEma
 barsSinceSignal = not na(lastSignalBar) ? bar_index - lastSignalBar : na
 remainingBars = not na(barsSinceSignal) ? math.max(signalLifeBars - barsSinceSignal, 0) : na
 agedScore = not na(lastSignalScore) and not na(barsSinceSignal) ? clampFloat(lastSignalScore - barsSinceSignal * 25.0 / signalLifeBars, 0, 100) : na
-signalExpired = currentDir != 0 and not na(remainingBars) and remainingBars <= 0
-effectiveDir = signalExpired ? 0 : currentDir
-expiredNow = signalExpired and not nz(signalExpired[1], false)
+isSignalExpired = currentDir != 0 and not na(remainingBars) and remainingBars <= 0
+effectiveDir = isSignalExpired ? 0 : currentDir
+expiredNow = isSignalExpired and not nz(isSignalExpired[1], false)
 
 bool flipSignalNow = false
 bool addSignalNow = false
@@ -389,9 +407,12 @@ if array.size(evt_time) > 0
             passFilters = (not useTrendFilter or trendOk) and (not useRsiFilter or rsiOk) and (not useVolFilter or volatilityOk) and (not useHtfConfirm or htfOk)
             filterText = "EMA " + filterBadge(useTrendFilter, trendOk) + " / RSI " + filterBadge(useRsiFilter, rsiOk) + " / ATR " + filterBadge(useVolFilter, volatilityOk) + " / HTF " + filterBadge(useHtfConfirm, htfOk)
             baseScore = 35.0 + s * 15.0 + profileBias(assetProfile)
-            filterScore = (useTrendFilter ? (trendOk ? 8.0 : -18.0) : 0.0) + (useRsiFilter ? (rsiOk ? 6.0 : -12.0) : 0.0) + (useVolFilter ? (volatilityOk ? 4.0 : -10.0) : 0.0) + (useHtfConfirm ? (htfOk ? 10.0 : -18.0) : 0.0)
+            filterScore = (useTrendFilter ? (trendOk ? TREND_FILTER_BONUS : TREND_FILTER_PENALTY) : 0.0) + (useRsiFilter ? (rsiOk ? RSI_FILTER_BONUS : RSI_FILTER_PENALTY) : 0.0) + (useVolFilter ? (volatilityOk ? VOL_FILTER_BONUS : VOL_FILTER_PENALTY) : 0.0) + (useHtfConfirm ? (htfOk ? HTF_FILTER_BONUS : HTF_FILTER_PENALTY) : 0.0)
             score = clampFloat(baseScore + filterScore, 0, 100)
-            richTip = tip + "\n品質分數: " + str.tostring(score, "#.0") + " (" + qualityLabel(score) + ")" + "\n濾網: " + filterText + "\n建議倉位: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "%"
+            scoreText = "品質分數: " + str.tostring(score, "#.0") + " (" + qualityLabel(score) + ")"
+            filterStatusText = "濾網: " + filterText
+            positionText = "建議倉位: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "%"
+            richTip = tip + "\n" + scoreText + "\n" + filterStatusText + "\n" + positionText
 
             lastFilterText := filterText
             if passFilters
@@ -483,15 +504,15 @@ stopAtr = profileStopAtr(assetProfile)
 riskText = effectiveDir == 0 ? "等待下一筆翻轉" : str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批 2-3 段"
 qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + qualityLabel(agedScore) + ")" : "尚無"
 ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
-ageText = lastEvtTime <= 0 ? "尚無事件" : signalExpired ? "已過期" : not na(ageHours) and ageHours < 1 ? str.tostring(ageHours * 60, "#") + " 分鐘前" : not na(ageHours) and ageHours < 48 ? str.tostring(ageHours, "#.0") + " 小時前" : "已過期"
-validityText = effectiveDir == 0 ? (signalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
+ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
+validityText = effectiveDir == 0 ? (isSignalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
 filterCompact = "EMA " + filterBadge(useTrendFilter, activeTrendOk) + " · RSI " + filterBadge(useRsiFilter, activeRsiOk) + " · ATR " + filterBadge(useVolFilter, volatilityOk) + " · HTF " + filterBadge(useHtfConfirm, activeHtfOk)
 
 if showPanel
     pos = panelPos == "右上" ? position.top_right : position.bottom_right
     var table t = table.new(pos, 2, 12, bgcolor=color.new(#111111, 5), border_color=color.new(#555555, 0), border_width=1)
     if barstate.islast
-        dirStr = effectiveDir == 1 ? "偏多 ▲" : effectiveDir == -1 ? "偏空 ▼" : signalExpired ? "訊號過期" : "等訊號"
+        dashboardDirectionLabel = effectiveDir == 1 ? "偏多 ▲" : effectiveDir == -1 ? "偏空 ▼" : isSignalExpired ? "訊號過期" : "等訊號"
         dirCol = effectiveDir == 1 ? #00E676 : effectiveDir == -1 ? #FF1744 : color.gray
         judgedA = winsA + lossesA
         winRateA = judgedA > 0 ? winsA / judgedA * 100 : 0
@@ -500,21 +521,21 @@ if showPanel
         winRateB = judgedB > 0 ? winsB / judgedB * 100 : 0
         wrColB = winRateB >= 60 ? #00E676 : winRateB >= 40 ? #ffeb3b : #FF1744
         qualityCol = not na(agedScore) ? agedScore >= 80 ? #00E676 : agedScore >= 65 ? #ffeb3b : #FF7043 : color.gray
-        ageCol = signalExpired ? color.gray : not na(ageHours) and ageHours < 24 ? color.white : #ffeb3b
+        ageCol = isSignalExpired ? color.gray : not na(ageHours) and ageHours < 24 ? color.white : #ffeb3b
         suggest = winRateB > winRateA ? "建議: 用翻轉平倉作主策略" : winRateA > winRateB ? "建議: 固定 " + str.tostring(holdBars) + " 棒出場" : "建議: 兩者差不多，優先看品質分數"
         sugCol = winRateB > winRateA ? #00E676 : winRateA > winRateB ? #ffeb3b : color.gray
         table.cell(t, 0, 0, "8zz 情緒反轉框架 [Community]", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
         table.cell(t, 1, 0, assetProfile, text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
         table.cell(t, 0, 1, "方向", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 1, dirStr, text_color=dirCol, text_size=size.normal)
+        table.cell(t, 1, 1, dashboardDirectionLabel, text_color=dirCol, text_size=size.normal)
         table.cell(t, 0, 2, "倉位", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + str.tostring(posCount * 100 / maxPyramid) + "%)", text_color=color.white, text_size=size.small)
+        table.cell(t, 1, 2, str.tostring(posCount) + "/" + str.tostring(maxPyramid) + " (" + str.tostring(maxPyramid > 0 ? posCount * 100 / maxPyramid : 0) + "%)", text_color=color.white, text_size=size.small)
         table.cell(t, 0, 3, "訊號品質", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 3, qualityText, text_color=qualityCol, text_size=size.small)
         table.cell(t, 0, 4, "訊號年齡", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 4, ageText, text_color=ageCol, text_size=size.small)
         table.cell(t, 0, 5, "有效期", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 5, validityText, text_color=signalExpired ? color.gray : color.white, text_size=size.small)
+        table.cell(t, 1, 5, validityText, text_color=isSignalExpired ? color.gray : color.white, text_size=size.small)
         table.cell(t, 0, 6, "風控", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 6, riskText, text_color=color.white, text_size=size.small)
         table.cell(t, 0, 7, "濾網", text_color=color.gray, text_size=size.tiny)
