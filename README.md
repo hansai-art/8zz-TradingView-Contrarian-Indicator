@@ -50,7 +50,7 @@
 
 **步驟：**
 
-1. 開啟指標頁面：**[tw.tradingview.com/script/IbVmSqfj/](https://tw.tradingview.com/script/IbVmSqfj/)**
+1. 開啟指標頁面：**[tw.tradingview.com/script/IbVmSqfj/](https://tw.tradingview.com/script/6pVuUMS1/)**
 2. 點擊「加到最愛」（☆ 收藏）
 3. 回到圖表 → 開啟指標搜尋 → 切換到「收藏」分頁 → 搜尋 **8zz** 即可找到
 
