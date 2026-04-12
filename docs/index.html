@@ -330,7 +330,7 @@
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     stats    = data.stats;
-    allEvents = data.events;
+    allEvents = data.events.slice().sort((a, b) => b.unix_ms - a.unix_ms);
   } catch (e) {
     $('loading').style.display = 'none';
     $('error').style.display   = 'block';
