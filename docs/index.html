@@ -62,6 +62,37 @@
     .badge-blue   { background: #1a2a3a; color: var(--blue);  border: 1px solid var(--blue); }
     .badge-muted  { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
 
+    /* ── Mode tabs ── */
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .mode-tab {
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .mode-tab.active {
+      border-color: var(--blue);
+      background: #1a2a3a;
+      color: var(--blue);
+    }
+    .mode-desc {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border-left: 3px solid var(--border);
+    }
+
     /* ── Stats grid ── */
     .stats-grid {
       display: grid;
@@ -153,6 +184,16 @@
       color: var(--muted);
       font-size: 12px;
     }
+    .ticker-cell {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--blue);
+    }
+    .ticker-fallback {
+      color: var(--muted);
+    }
+    /* Mode A columns hidden by default, shown via JS */
+    .col-mode-a { display: none; }
 
     /* ── Auto-update notice ── */
     .notice-bar {
@@ -192,7 +233,7 @@
     <div>
       <h1>8zz 反指標 — 即時戰績看板</h1>
       <div class="subtitle">
-        社群情緒反轉框架｜參考指數：0050.TW（元大台灣50）
+        社群情緒反轉框架｜以實際持倉資產追蹤（依各事件 ticker，空值補 0050.TW）
         &nbsp;·&nbsp;
         <a href="https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView" target="_blank">GitHub ↗</a>
       </div>
@@ -213,11 +254,20 @@
 
   <div id="main-content" style="display:none">
 
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-b" onclick="switchMode('b')">Mode B｜翻轉訊號出場</button>
+      <button class="mode-tab"        id="tab-a" onclick="switchMode('a')">Mode A｜固定 <span id="hold-bars-label">14</span> 根 K 棒出場</button>
+    </div>
+    <div class="mode-desc" id="mode-desc">
+      <strong>Mode B（翻轉平倉）</strong>：每筆翻轉訊號持有至下一次方向翻轉時出場。報酬以各事件指定的標的計算。
+    </div>
+
     <!-- Stats cards -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="val" id="s-winrate" style="color:var(--green)">—</div>
-        <div class="lbl">勝率（翻轉訊號）</div>
+        <div class="lbl" id="s-winrate-lbl">勝率</div>
       </div>
       <div class="stat-card">
         <div class="val" id="s-wins" style="color:var(--green)">—</div>
@@ -244,11 +294,11 @@
     <!-- Charts -->
     <div class="charts-row">
       <div class="chart-card">
-        <h3>翻轉訊號方向分析</h3>
+        <h3>翻轉訊號方向分析（Mode A vs B）</h3>
         <canvas id="dirChart" height="200"></canvas>
       </div>
       <div class="chart-card">
-        <h3>強度別勝率 (★☆☆ / ★★☆ / ★★★)</h3>
+        <h3>強度別勝率（★☆☆ / ★★☆ / ★★★）— Mode A vs B</h3>
         <canvas id="strChart" height="200"></canvas>
       </div>
     </div>
@@ -298,12 +348,16 @@
             <th>日期</th>
             <th>方向</th>
             <th>強度</th>
+            <th>標的</th>
             <th>說明</th>
             <th>翻轉</th>
             <th>進場日</th>
-            <th>出場日</th>
-            <th>報酬率</th>
-            <th>結果</th>
+            <th class="col-mode-b">出場日(B)</th>
+            <th class="col-mode-b">報酬(B)</th>
+            <th class="col-mode-b">結果(B)</th>
+            <th class="col-mode-a">出場日(A)</th>
+            <th class="col-mode-a">報酬(A)</th>
+            <th class="col-mode-a">結果(A)</th>
           </tr>
         </thead>
         <tbody id="evt-tbody"></tbody>
@@ -313,8 +367,9 @@
   </div><!-- /main-content -->
 
   <footer>
-    免責聲明：本頁面僅供學術研究與娛樂用途，不構成任何投資建議。
-    勝率以 0050.TW（元大台灣50）作為參考指數計算，不代表個股操作結果。
+    免責聲明：本頁面僅供學術研究與娛樂用途，不構成任何投資建議。<br>
+    報酬率以各事件指定的標的計算；無法辨識標的時以 0050.TW（元大台灣50）代替。<br>
+    <strong>Mode A</strong> = 固定 <span id="footer-hold-bars">14</span> 根交易日出場&ensp;|&ensp;<strong>Mode B</strong> = 翻轉訊號出場（持有至下一次方向翻轉）
   </footer>
 </div><!-- /container -->
 
@@ -323,6 +378,9 @@
   const $ = id => document.getElementById(id);
   let allEvents = [];
   let stats = {};
+  let currentMode = 'b'; // 'a' or 'b'
+  let dirChartObj = null;
+  let strChartObj = null;
 
   // ── Fetch data ──────────────────────────────────────────────────────────────
   try {
@@ -341,85 +399,163 @@
   $('loading').style.display      = 'none';
   $('main-content').style.display = 'block';
 
-  // ── Stats cards ─────────────────────────────────────────────────────────────
-  const hasResolved = stats.resolved_flips > 0;
-  if (hasResolved) {
-    const winRateColor = stats.win_rate >= 60 ? 'var(--green)' : stats.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
-    $('s-winrate').textContent = stats.win_rate + '%';
-    $('s-winrate').style.color = winRateColor;
-    const avg = stats.avg_pnl_pct;
-    $('s-avgpnl').textContent  = (avg >= 0 ? '+' : '') + avg + '%';
-    $('s-avgpnl').style.color  = avg >= 0 ? 'var(--green)' : 'var(--red)';
-  } else {
-    $('s-winrate').textContent = '計算中';
-    $('s-winrate').style.color = 'var(--muted)';
-    $('s-avgpnl').textContent  = '計算中';
-    $('s-avgpnl').style.color  = 'var(--muted)';
-  }
-  $('s-wins').textContent   = stats.wins;
-  $('s-losses').textContent = stats.losses;
-  $('s-open').textContent   = stats.open_flips;
-  $('s-total').textContent  = stats.total_events;
+  const holdBars = stats.mode_a_hold_bars || 14;
+  $('hold-bars-label').textContent = holdBars;
+  $('footer-hold-bars').textContent = holdBars;
 
   const gen = new Date(stats.generated_at);
   $('generated-at').textContent = '更新時間：' + gen.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+  $('s-total').textContent = stats.total_events;
 
-  // ── Direction chart ─────────────────────────────────────────────────────────
-  new Chart($('dirChart'), {
-    type: 'bar',
-    data: {
-      labels: ['偏多 ▲', '偏空 ▼'],
-      datasets: [
-        {
-          label: '勝',
-          data: [stats.bullish_wins, stats.bearish_wins],
-          backgroundColor: 'rgba(0,230,118,0.7)',
-        },
-        {
-          label: '敗',
-          data: [
-            stats.bullish_flips - stats.bullish_wins,
-            stats.bearish_flips - stats.bearish_wins,
-          ],
-          backgroundColor: 'rgba(255,23,68,0.7)',
-        },
-      ],
-    },
-    options: {
-      plugins: { legend: { labels: { color: '#8b949e' } } },
-      scales: {
-        x: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-        y: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-      },
-    },
-  });
+  // ── Mode switching ──────────────────────────────────────────────────────────
+  window.switchMode = function(mode) {
+    currentMode = mode;
+    $('tab-a').classList.toggle('active', mode === 'a');
+    $('tab-b').classList.toggle('active', mode === 'b');
 
-  // ── Strength chart ──────────────────────────────────────────────────────────
-  const byStr = stats.by_strength;
-  new Chart($('strChart'), {
-    type: 'bar',
-    data: {
-      labels: ['★☆☆ (弱)', '★★☆ (中)', '★★★ (強)'],
-      datasets: [
-        {
-          label: '勝率 %',
-          data: [byStr['1'].win_rate, byStr['2'].win_rate, byStr['3'].win_rate],
-          backgroundColor: ['rgba(88,166,255,0.6)', 'rgba(88,166,255,0.75)', 'rgba(88,166,255,0.9)'],
-        },
-      ],
+    const modeDescEl = $('mode-desc');
+    if (mode === 'b') {
+      modeDescEl.innerHTML = '<strong>Mode B（翻轉平倉）</strong>：每筆翻轉訊號持有至下一次方向翻轉時出場。報酬以各事件指定的標的計算。';
+    } else {
+      modeDescEl.innerHTML = `<strong>Mode A（固定 ${holdBars} 棒）</strong>：每筆翻轉訊號進場後，持滿 ${holdBars} 根交易日出場。報酬以各事件指定的標的計算。`;
+    }
+
+    document.querySelectorAll('.col-mode-a').forEach(el => {
+      el.style.display = mode === 'a' ? '' : 'none';
+    });
+    document.querySelectorAll('.col-mode-b').forEach(el => {
+      el.style.display = mode === 'b' ? '' : 'none';
+    });
+
+    renderStats(mode);
+    updateCharts(mode);
+    applyFilters();
+  };
+
+  // ── Stats cards ─────────────────────────────────────────────────────────────
+  function renderStats(mode) {
+    const ms = mode === 'b' ? stats.mode_b : stats.mode_a;
+    if (!ms) return;
+
+    const hasResolved = ms.resolved_flips > 0;
+    if (hasResolved) {
+      const winRateColor = ms.win_rate >= 60 ? 'var(--green)' : ms.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
+      $('s-winrate').textContent = ms.win_rate + '%';
+      $('s-winrate').style.color = winRateColor;
+      const avg = ms.avg_pnl_pct;
+      $('s-avgpnl').textContent  = (avg >= 0 ? '+' : '') + avg + '%';
+      $('s-avgpnl').style.color  = avg >= 0 ? 'var(--green)' : 'var(--red)';
+    } else {
+      $('s-winrate').textContent = '計算中';
+      $('s-winrate').style.color = 'var(--muted)';
+      $('s-avgpnl').textContent  = '計算中';
+      $('s-avgpnl').style.color  = 'var(--muted)';
+    }
+    $('s-wins').textContent   = ms.wins;
+    $('s-losses').textContent = ms.losses;
+    $('s-open').textContent   = ms.open_flips;
+    const modeLabel = mode === 'b' ? '勝率（翻轉出場）' : `勝率（固定 ${holdBars} 棒）`;
+    $('s-winrate-lbl').textContent = modeLabel;
+  }
+
+  renderStats('b');
+
+  // ── Charts ───────────────────────────────────────────────────────────────────
+  const CHART_COLORS = {
+    bWin:  'rgba(0,230,118,0.75)',
+    bLoss: 'rgba(255,23,68,0.75)',
+    aWin:  'rgba(88,166,255,0.65)',
+    aLoss: 'rgba(255,112,67,0.65)',
+  };
+  const CHART_OPTS_BASE = {
+    plugins: { legend: { labels: { color: '#8b949e' } } },
+    scales: {
+      x: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+      y: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
     },
-    options: {
-      plugins: { legend: { labels: { color: '#8b949e' } } },
-      scales: {
-        x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-        y: {
-          min: 0, max: 100,
-          ticks: { color: '#8b949e', callback: v => v + '%' },
-          grid: { color: '#30363d' },
+  };
+
+  function buildDirData(ms, label, winColor, lossColor) {
+    return [
+      { label: label + ' 勝', data: [ms.bullish_wins, ms.bearish_wins], backgroundColor: winColor },
+      {
+        label: label + ' 敗',
+        data: [ms.bullish_flips - ms.bullish_wins, ms.bearish_flips - ms.bearish_wins],
+        backgroundColor: lossColor,
+      },
+    ];
+  }
+
+  function buildStrData(ms, label, color) {
+    const bs = ms.by_strength;
+    return {
+      label: label + ' 勝率 %',
+      data: [bs['1'].win_rate, bs['2'].win_rate, bs['3'].win_rate],
+      backgroundColor: color,
+    };
+  }
+
+  function initCharts() {
+    const mb = stats.mode_b, ma = stats.mode_a;
+
+    dirChartObj = new Chart($('dirChart'), {
+      type: 'bar',
+      data: {
+        labels: ['偏多 ▲', '偏空 ▼'],
+        datasets: [
+          ...buildDirData(mb, 'B', CHART_COLORS.bWin, CHART_COLORS.bLoss),
+          ...buildDirData(ma, 'A', CHART_COLORS.aWin, CHART_COLORS.aLoss),
+        ],
+      },
+      options: CHART_OPTS_BASE,
+    });
+
+    strChartObj = new Chart($('strChart'), {
+      type: 'bar',
+      data: {
+        labels: ['★☆☆ (弱)', '★★☆ (中)', '★★★ (強)'],
+        datasets: [
+          buildStrData(mb, 'B', 'rgba(0,230,118,0.65)'),
+          buildStrData(ma, 'A', 'rgba(88,166,255,0.65)'),
+        ],
+      },
+      options: {
+        plugins: { legend: { labels: { color: '#8b949e' } } },
+        scales: {
+          x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+          y: {
+            min: 0, max: 100,
+            ticks: { color: '#8b949e', callback: v => v + '%' },
+            grid: { color: '#30363d' },
+          },
         },
       },
-    },
-  });
+    });
+  }
+
+  function updateCharts(mode) {
+    // Highlight the selected mode's datasets by adjusting opacity
+    if (!dirChartObj) return;
+    const activeAlpha = 0.85, inactiveAlpha = 0.25;
+
+    // dirChart: datasets 0,1 = Mode B; 2,3 = Mode A
+    const dirDs = dirChartObj.data.datasets;
+    [0, 1].forEach(i => {
+      dirDs[i].backgroundColor = dirDs[i].backgroundColor.replace(/[\d.]+\)$/, (mode === 'b' ? activeAlpha : inactiveAlpha) + ')');
+    });
+    [2, 3].forEach(i => {
+      dirDs[i].backgroundColor = dirDs[i].backgroundColor.replace(/[\d.]+\)$/, (mode === 'a' ? activeAlpha : inactiveAlpha) + ')');
+    });
+    dirChartObj.update();
+
+    // strChart: dataset 0 = Mode B; 1 = Mode A
+    const strDs = strChartObj.data.datasets;
+    strDs[0].backgroundColor = 'rgba(0,230,118,' + (mode === 'b' ? activeAlpha : inactiveAlpha) + ')';
+    strDs[1].backgroundColor = 'rgba(88,166,255,' + (mode === 'a' ? activeAlpha : inactiveAlpha) + ')';
+    strChartObj.update();
+  }
+
+  initCharts();
 
   // ── Table rendering ─────────────────────────────────────────────────────────
   function outcomeBadge(o) {
@@ -430,31 +566,52 @@
     return '<span class="badge badge-muted">—</span>';
   }
 
-  function pnlCell(pnl) {
-    if (pnl == null) return '<td>—</td>';
-    const cls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-    return `<td class="${cls}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</td>`;
+  function pnlCell(pnl, extraClass) {
+    const cls = extraClass || '';
+    if (pnl == null) return `<td class="${cls}">—</td>`;
+    const colorCls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+    return `<td class="${cls} ${colorCls}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</td>`;
+  }
+
+  function getOutcome(e, mode) {
+    return mode === 'b' ? e.outcome : e.outcome_a;
   }
 
   function renderTable(filtered) {
     const tbody = $('evt-tbody');
     tbody.innerHTML = '';
+    const showA = currentMode === 'a';
     filtered.forEach((e, idx) => {
       const dirClass = e.direction === 1 ? 'dir-bull' : 'dir-bear';
       const flipMark = e.is_flip ? '🔄' : '';
       const tip = (e.tooltip || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const tickerCls = e.ticker_is_fallback ? 'ticker-cell ticker-fallback' : 'ticker-cell';
+      const tickerLabel = e.ticker || '—';
+      const outcome = getOutcome(e, currentMode);
       tbody.innerHTML += `
         <tr>
           <td style="color:var(--muted)">${idx + 1}</td>
           <td style="white-space:nowrap">${e.date}</td>
           <td class="${dirClass}">${e.dir_label}</td>
           <td>${e.strength_label}</td>
+          <td class="${tickerCls}">${tickerLabel}</td>
           <td class="tooltip-cell">${tip}</td>
           <td style="text-align:center">${flipMark}</td>
           <td style="white-space:nowrap">${e.entry_date || '—'}</td>
-          <td style="white-space:nowrap">${e.exit_date  || '—'}</td>
-          ${pnlCell(e.pnl_pct)}
-          <td>${e.is_flip ? outcomeBadge(e.outcome) : '—'}</td>
+          <td class="col-mode-b" style="white-space:nowrap;${showA?'display:none':''}">
+            ${e.is_flip ? (e.exit_date || '—') : '—'}
+          </td>
+          ${pnlCell(e.is_flip ? e.pnl_pct : null, 'col-mode-b' + (showA ? '" style="display:none' : ''))}
+          <td class="col-mode-b"${showA?' style="display:none"':''}>
+            ${e.is_flip ? outcomeBadge(e.outcome) : '—'}
+          </td>
+          <td class="col-mode-a" style="white-space:nowrap;${!showA?'display:none':''}">
+            ${e.is_flip ? (e.exit_date_a || '—') : '—'}
+          </td>
+          ${pnlCell(e.is_flip ? e.pnl_pct_a : null, 'col-mode-a' + (!showA ? '" style="display:none' : ''))}
+          <td class="col-mode-a"${!showA?' style="display:none"':''}>
+            ${e.is_flip ? outcomeBadge(e.outcome_a) : '—'}
+          </td>
         </tr>`;
     });
     $('row-count').textContent = `顯示 ${filtered.length} / ${allEvents.length} 筆`;
@@ -473,9 +630,10 @@
       if (str !== 'all' && String(e.strength) !== str) return false;
       if (outcome !== 'all') {
         if (!e.is_flip) return false;
-        if (e.outcome !== outcome) return false;
+        const oc = getOutcome(e, currentMode);
+        if (oc !== outcome) return false;
       }
-      if (search && !(e.tooltip || '').toLowerCase().includes(search)) return false;
+      if (search && !(e.tooltip || '').toLowerCase().includes(search) && !(e.ticker || '').toLowerCase().includes(search)) return false;
       return true;
     });
     renderTable(filtered);
