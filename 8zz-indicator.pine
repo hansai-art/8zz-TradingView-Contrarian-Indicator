@@ -411,7 +411,7 @@ if barstate.isfirst
     array.push(evt_dir, -1)
     array.push(evt_str, 3)
     array.push(evt_tips, "買進 | 信驊\n指標: 偏空 ▼ | 強度: ★★★\nFB 04/09 09:25 停損渣男鈦昇後買信驊")
-    array.push(evt_ticker, "")
+    array.push(evt_ticker, "5274.TW")
     array.push(evt_time, 1775708100000)
     array.push(evt_dir, 1)
     array.push(evt_str, 3)
