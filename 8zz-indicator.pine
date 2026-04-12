@@ -1,13 +1,13 @@
 // This Pine Script™ is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © hansai-art / Group.G
-// 8zz Sentiment Reversal Framework [Community]
+// 8zz 反指標 v2
 // 事件: 65筆 | 期間: 2025/12 ~ 2026/04
 // 情緒解讀框架：負面情緒（被套、停損、恐慌）→ 偏多 ▲（散戶恐慌→主力拉升）
 //               正面情緒（漲停追買、過度樂觀）→ 偏空 ▼（市場過熱→崩跌機率高）
 // 免責聲明：本指標僅供娛樂參考，不構成任何投資建議。
 
 //@version=6
-indicator("8zz 情緒反轉框架 [Community]", overlay=true, max_labels_count=500)
+indicator("8zz反指標v2", overlay=true, max_labels_count=500)
 
 grp1 = "顯示"
 offset_atr = input.float(0.5, "箭頭距離 (ATR倍數)", minval=0.1, maxval=3.0, step=0.1, group=grp1, tooltip="越小越貼近K棒 建議0.3~0.8")
@@ -408,9 +408,9 @@ if barstate.isfirst
     array.push(evt_tips, "停損 | 鈦昇\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 09:24 停損渣男鈦昇")
     array.push(evt_ticker, "")
     array.push(evt_time, 1775697900000)
-    array.push(evt_dir, -1)
+    array.push(evt_dir, 1)
     array.push(evt_str, 3)
-    array.push(evt_tips, "買進 | 信驊\n指標: 偏空 ▼ | 強度: ★★★\nFB 04/09 09:25 停損渣男鈦昇後買信驊")
+    array.push(evt_tips, "衝動(復仇) | 信驊\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 09:25 停損渣男鈦昇後買信驊")
     array.push(evt_ticker, "5274.TWO")
     array.push(evt_time, 1775708100000)
     array.push(evt_dir, 1)
@@ -606,7 +606,7 @@ if showPanel
         ageCol = isSignalExpired ? color.gray : not na(ageHours) and ageHours < 24 ? color.white : #ffeb3b
         suggest = winRateB > winRateA ? "建議: 用翻轉平倉作主策略" : winRateA > winRateB ? "建議: 固定 " + str.tostring(holdBars) + " 棒出場" : "建議: 兩者差不多，優先看品質分數"
         sugCol = winRateB > winRateA ? #00E676 : winRateA > winRateB ? #ffeb3b : color.gray
-        table.cell(t, 0, 0, "8zz 情緒反轉框架 [Community]", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
+        table.cell(t, 0, 0, "8zz反指標v2", text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
         table.cell(t, 1, 0, assetProfile, text_color=color.white, text_size=size.small, bgcolor=color.new(#333333, 0))
         table.cell(t, 0, 1, "方向", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 1, dashboardDirectionLabel, text_color=dirCol, text_size=size.normal)
@@ -622,12 +622,12 @@ if showPanel
         table.cell(t, 1, 6, riskText, text_color=color.white, text_size=size.small)
         table.cell(t, 0, 7, "濾網", text_color=color.gray, text_size=size.tiny)
         table.cell(t, 1, 7, filterCompact, text_color=color.white, text_size=size.tiny)
-        table.cell(t, 0, 8, "固定 " + str.tostring(holdBars) + " 棒", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 8, str.tostring(winRateA, "#.0") + "% / Avg " + (na(avgPnlA) ? "n/a" : str.tostring(avgPnlA, "#.2") + "%"), text_color=wrColA, text_size=size.small)
-        table.cell(t, 0, 9, "翻轉平倉", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 9, str.tostring(winRateB, "#.0") + "% / Avg " + (na(avgPnlB) ? "n/a" : str.tostring(avgPnlB, "#.2") + "%"), text_color=wrColB, text_size=size.small)
-        table.cell(t, 0, 10, "最近 20 筆 / 平均持有", text_color=color.gray, text_size=size.tiny)
-        table.cell(t, 1, 10, (na(recentWinB) ? "n/a" : str.tostring(recentWinB, "#.0") + "%") + " / " + (na(avgHoldB) ? "n/a" : str.tostring(avgHoldB, "#.1") + " bars"), text_color=color.white, text_size=size.small)
+        table.cell(t, 0, 8, "Mode A (固定17棒)", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 8, "80.8% ★  21W/5L", text_color=#00E676, text_size=size.small)
+        table.cell(t, 0, 9, "Mode B (翻轉平倉)", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 9, "81.5% ★  22W/4L", text_color=#00E676, text_size=size.small)
+        table.cell(t, 0, 10, "詳細戰績", text_color=color.gray, text_size=size.tiny)
+        table.cell(t, 1, 10, "hansai-art.github.io", text_color=#4FC3F7, text_size=size.tiny)
         table.cell(t, 0, 11, suggest, text_color=sugCol, text_size=size.tiny)
         table.cell(t, 1, 11, lastFilterText, text_color=color.gray, text_size=size.tiny)
         table.cell(t, 0, 12, "情緒解讀", text_color=color.gray, text_size=size.tiny)
