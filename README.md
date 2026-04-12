@@ -112,13 +112,12 @@
 ### 啟用步驟（Repo Owner，一次設定）
 
 1. 至 GitHub Repo → **Settings → Pages**
-2. **Source** 選 `Deploy from a branch`
-3. **Branch** 選 `main`，**Folder** 選 `/docs`
-4. 儲存後等約 1 分鐘，頁面網址為：
+2. **Source** 選 `GitHub Actions`
+3. 儲存後等約 1 分鐘，頁面網址為：
    ```
    https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/
    ```
-5. 每次 GitHub Actions 執行時，`docs/events.json` 會自動更新，看板即時反映最新資料
+4. 之後每次 `Fetch FB Events & Update Pine Script` workflow 執行完畢後，`deploy-pages.yml` 會自動觸發部署，看板即時反映最新資料
 
 ### 技術說明
 
@@ -292,7 +291,8 @@ GitHub Actions 排程觸發
 ├── 8zz-indicator.pine             ← Pine Script 指標（自動更新）
 ├── .github/
 │   └── workflows/
-│       └── fetch-fb-events.yml   ← GitHub Actions 排程工作流程
+│       ├── fetch-fb-events.yml   ← GitHub Actions 排程工作流程（抓取 FB 事件）
+│       └── deploy-pages.yml      ← GitHub Pages 自動部署（由 fetch-fb-events 觸發）
 ├── scripts/
 │   ├── fetch_fb_events.py        ← FB 爬蟲 + 情緒分類器
 │   ├── update_pine_script.py     ← Pine Script 自動更新器
