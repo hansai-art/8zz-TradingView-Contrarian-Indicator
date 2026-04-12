@@ -17,7 +17,7 @@ showPanel  = input.bool(true, "顯示資訊面板", group=grp1)
 panelPos   = input.string("右下", "資訊面板位置", options=["右上", "右下"], group=grp1)
 
 grp2 = "訊號治理"
-holdBars = input.int(14, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
+holdBars = input.int(17, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗（建議使用30分鐘線，17根≈8.5小時）")
 signalLifeBars = input.int(24, "訊號有效K棒", minval=1, maxval=200, group=grp2, tooltip="超過此 K 棒數後，訊號視為過期；箭頭仍保留在歷史上，但背景與有效方向會停用")
 showFilteredMarks = input.bool(false, "顯示被濾掉的原始訊號", group=grp2)
 
