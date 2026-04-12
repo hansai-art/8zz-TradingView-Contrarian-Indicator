@@ -1,0 +1,77 @@
+name: Fetch FB Events & Update Pine Script
+
+# ── Schedule ──────────────────────────────────────────────────────────────────
+# Taiwan Stock Exchange (UTC+8): 09:00–13:30 → UTC 01:00–05:00, every 30 min
+# US Market open (EST/EDT):     09:30 EST    → UTC 14:30, weekdays only
+#
+# Resulting triggers (UTC, weekdays only):
+#   01:00  01:30  02:00  02:30  03:00  03:30  04:00  04:30  05:00  ← TSE (9 runs)
+#   14:30                                                            ← US open (1 run)
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # Taiwan Stock Exchange session – every 30 minutes, 09:00–13:30 TST
+    - cron: "0,30 1,2,3,4,5 * * 1-5"
+    # US market open – two entries to cover both EST and EDT:
+    #   UTC 14:30 = 09:30 EST  (Nov–Mar, standard time)
+    - cron: "30 14 * * 1-5"
+    #   UTC 13:30 = 09:30 EDT  (Mar–Nov, daylight saving time)
+    - cron: "30 13 * * 1-5"
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  update-pine:
+    name: Fetch & Inject FB Events
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit & push the updated .pine file
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python setup ──────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      # ── 3. Scrape & classify ─────────────────────────────────────────────────
+      - name: Fetch and classify FB posts
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_COOKIES: ${{ secrets.FB_COOKIES }}
+        run: python scripts/fetch_fb_events.py
+
+      # ── 4. Inject events into .pine ──────────────────────────────────────────
+      - name: Update Pine Script with new events
+        run: python scripts/update_pine_script.py
+
+      # ── 5. Commit & push (only when the .pine file actually changed) ─────────
+      - name: Commit and push changes
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage every file the scripts may have touched
+          git add 8zz-indicator.pine data/last_event_timestamp.json data/new_events.json
+
+          # Only commit when there is a real diff
+          if git diff --cached --quiet; then
+            echo "Nothing changed – skipping commit."
+          else
+            EVENT_COUNT=$(grep -c "array.push(evt_time," 8zz-indicator.pine || echo "?")
+            git commit -m "auto: inject new FB events (total events: ${EVENT_COUNT})"
+            git push
+          fi

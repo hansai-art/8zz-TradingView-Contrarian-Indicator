@@ -80,6 +80,63 @@
 
 ---
 
+## 自動更新 Pipeline
+
+> 此功能讓指標的事件庫在臺股與美股開盤時段全自動抓取並更新，**一天僅觸發約 11 次**，GitHub Actions 免費額度完全足夠。
+
+### 架構圖
+
+```
+FB 公開貼文
+    ↓ (facebook-scraper)
+GitHub Actions 排程觸發
+    ↓ (scripts/fetch_fb_events.py)
+規則式情緒分類器
+    ↓ (scripts/update_pine_script.py)
+自動更新 8zz-indicator.pine → git push
+    ↓
+使用者取得最新版本（見下方三種方案）
+```
+
+### 排程規則
+
+| 時段 | Cron (UTC) | 對應台灣時間 | 次數 |
+|------|-----------|-------------|------|
+| 臺股開盤 09:00–13:30 | `0,30 1,2,3,4,5 * * 1-5` | 週一～五每 30 分鐘 | 9次/天 |
+| 美股開盤 09:30 EST | `30 14 * * 1-5` (標準時) / `30 13 * * 1-5` (夏令時) | 台灣時間 22:30 / 21:30 | 1次/天 |
+
+### 如何取得最新版本
+
+| 方案 | 說明 |
+|------|------|
+| **A（手動）** | 訂閱 GitHub Releases 通知，有新事件時去複製最新 `.pine` 貼入 TradingView |
+| **B（半自動）** | 從 [Raw URL](https://raw.githubusercontent.com/hansai-art/8zz-Contrarian-Indicator-TradingView/main/8zz-indicator.pine) 直接載入腳本，之後每次開圖自動讀最新版 |
+| **C（全自動 Pro）** | 後端爬到新事件後透過 TradingView Webhook Alert 直接推送訊號給訂閱者 |
+
+### 啟用步驟（Repo Owner）
+
+1. 至 GitHub Repo → **Settings → Secrets and variables → Actions** 新增：
+   - `FB_PAGE_ID`：追蹤的公開 FB 頁面 ID 或 username
+   - `FB_COOKIES`（選填）：若頁面需登入，填入 JSON 格式 cookie 字串
+2. 確認 `.github/workflows/fetch-fb-events.yml` 已合併到 `main` branch
+3. GitHub Actions 會依排程自動執行，有新事件時自動 commit & push
+
+### 情緒分類規則（`scripts/fetch_fb_events.py`）
+
+| 關鍵字（觸發即分類） | 方向 | 強度 |
+|----------------------|------|------|
+| 停損、認賠、虧損、畢業、爆倉 | 偏多 ▲ | ★★★ |
+| 被套、跌停、房貸、住套房 | 偏多 ▲ | ★★★ |
+| 賣出、停利、出場 | 偏多 ▲ | ★★☆ |
+| 觀望、等、修正、怕 | 偏多 ▲ | ★☆☆ |
+| 漲停買、漲停追、追漲 | 偏空 ▼ | ★★★ |
+| 買進、加碼、補倉、看多 | 偏空 ▼ | ★★☆ |
+| 持有、長期、慢慢漲 | 偏空 ▼ | ★☆☆ |
+
+> 規則採**首次命中**（first-match wins），可在 `scripts/fetch_fb_events.py` 的 `SENTIMENT_RULES` 列表中調整優先順序與關鍵字。
+
+---
+
 ## Community vs Paid 路線
 
 | 模組 | Community Edition | Pro （規劃） | Elite （規劃） |
@@ -184,7 +241,17 @@
 
 ```text
 8zz-Contrarian-Indicator-TradingView/
-├── 8zz-indicator.pine
+├── 8zz-indicator.pine             ← Pine Script 指標（自動更新）
+├── .github/
+│   └── workflows/
+│       └── fetch-fb-events.yml   ← GitHub Actions 排程工作流程
+├── scripts/
+│   ├── fetch_fb_events.py        ← FB 爬蟲 + 情緒分類器
+│   ├── update_pine_script.py     ← Pine Script 自動更新器
+│   └── requirements.txt          ← Python 依賴清單
+├── data/
+│   ├── last_event_timestamp.json ← 爬蟲狀態（避免重複插入）
+│   └── new_events.json           ← 每次執行的暫存事件（腳本間傳遞）
 ├── assets/
 │   ├── backtest-0050.jpg
 │   ├── 001.jpg
