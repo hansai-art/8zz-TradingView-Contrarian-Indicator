@@ -30,6 +30,7 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
       font-size: 14px;
       line-height: 1.6;
+      overflow-x: hidden;
     }
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -130,7 +131,7 @@
       padding: 16px;
     }
     .chart-card h3 { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
-    .chart-card canvas { height: 280px; }
+    .chart-wrapper { position: relative; height: 280px; }
 
     /* ── Mobile ── */
     @media (max-width: 600px) {
@@ -148,7 +149,7 @@
       .stat-card .lbl { font-size: 10px; }
 
       /* Taller chart on mobile */
-      .chart-card canvas { height: 220px; }
+      .chart-wrapper { height: 200px; }
       .chart-card h3 { font-size: 12px; }
 
       /* Filter bar: 2-column grid */
@@ -317,7 +318,7 @@
     <div class="charts-row" style="grid-template-columns:1fr;">
       <div class="chart-card">
         <h3 id="equity-chart-title">資產增長曲線（起始 100）｜反指標 Mode B vs 買入持有 0050</h3>
-        <canvas id="equityChart" height="110"></canvas>
+        <div class="chart-wrapper"><canvas id="equityChart"></canvas></div>
       </div>
     </div>
 
