@@ -1,7 +1,8 @@
 {
   "stats": {
-    "generated_at": "2026-04-12T07:16:12.245730+00:00",
-    "reference_ticker": "0050.TW",
+    "generated_at": "2026-04-12T07:43:23.373815+00:00",
+    "fallback_ticker": "0050.TW",
+    "mode_a_hold_bars": 14,
     "total_events": 63,
     "total_flips": 33,
     "resolved_flips": 0,
@@ -32,6 +33,68 @@
         "wins": 0,
         "win_rate": 0
       }
+    },
+    "mode_b": {
+      "resolved_flips": 0,
+      "open_flips": 1,
+      "wins": 0,
+      "losses": 0,
+      "win_rate": 0,
+      "avg_pnl_pct": 0,
+      "bullish_flips": 0,
+      "bullish_wins": 0,
+      "bullish_win_rate": 0,
+      "bearish_flips": 0,
+      "bearish_wins": 0,
+      "bearish_win_rate": 0,
+      "by_strength": {
+        "1": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        },
+        "2": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        },
+        "3": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        }
+      }
+    },
+    "mode_a": {
+      "resolved_flips": 0,
+      "open_flips": 33,
+      "wins": 0,
+      "losses": 0,
+      "win_rate": 0,
+      "avg_pnl_pct": 0,
+      "bullish_flips": 0,
+      "bullish_wins": 0,
+      "bullish_win_rate": 0,
+      "bearish_flips": 0,
+      "bearish_wins": 0,
+      "bearish_win_rate": 0,
+      "by_strength": {
+        "1": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        },
+        "2": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        },
+        "3": {
+          "total": 0,
+          "wins": 0,
+          "win_rate": 0
+        }
+      }
     }
   },
   "events": [
@@ -44,13 +107,19 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "持有 | TSM\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 12/03 08:28 TSM終於要回本了",
+      "ticker": "TSM",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1765162380000,
@@ -61,13 +130,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損 | 虧損23%\n指標: 偏多 ▲ | 強度: ★★★\nFB 12/08 10:53 虧損23% 慘痛停損 買0050也早回本了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1765422360000,
@@ -78,13 +153,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 漢唐+白銀\n指標: 偏空 ▼ | 強度: ★★☆\nFB 12/11 11:06 補一點漢唐 希望白銀救我",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1765504200000,
@@ -95,6 +176,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進(誤觸)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 12/12 09:50 賣按成買 白白浪費手續費",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -106,6 +189,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "加碼 | 白銀\n指標: 偏空 ▼ | 強度: ★★☆\nFB 12/13 12:10 我的白銀怎辦 開場就要跌4%嗎",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -117,13 +202,19 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "觀望停利\n指標: 偏多 ▲ | 強度: ★☆☆\nFB 12/16 08:43 開始修正了 不會額外買進 看情況停利",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1765851240000,
@@ -134,6 +225,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "停損 | 個股\n指標: 偏多 ▲ | 強度: ★★☆\nFB 12/16 10:14 我也一直在停損 這是今天的份",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -145,13 +238,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | ETF\n指標: 偏空 ▼ | 強度: ★★☆\nFB 12/20 18:17 買了奈米聖誕樹 大盤往下砍2-3%買一次",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1767316140000,
@@ -162,6 +261,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 漲停股\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/02 09:09 你就別解漲停 我就買",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -173,6 +274,8 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "觀望 | 台積電\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 01/06 09:14 台積電要是回到1500以下我就切GG",
+      "ticker": "2330.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -184,6 +287,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 三貓\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/06 10:16 市價掛看看 三貓最近很猛",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -195,13 +300,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 漲停買入\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/07 09:44 我漲停買的啊",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1768196760000,
@@ -212,13 +323,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 白銀\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/12 13:46 明天買白銀好了",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1768266540000,
@@ -229,13 +346,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "被套 | 白銀\n指標: 偏多 ▲ | 強度: ★★☆\nFB 01/13 09:09 白銀怎麼輸！？",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1768282860000,
@@ -246,13 +369,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "加碼 | 白銀\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/13 13:41 買了白銀的我無敵了吧",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1768478820000,
@@ -263,6 +392,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 亞翔+洋基\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/15 20:07 明天開盤買亞翔跟洋基 擴廠買廠務",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -274,6 +405,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 亞翔\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/16 09:18 轉移目標到亞翔",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -285,6 +418,8 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "持有 | 華邦電\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 01/19 14:01 華崩電回到漲停了？明天給我賺錢吧",
+      "ticker": "2344.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -296,6 +431,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "買進 | 漲停進場\n指標: 偏空 ▼ | 強度: ★★★\nFB 01/19 18:07 我今天才買漲停進場",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -307,13 +444,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 跌停\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/20 09:02 跌停是怎樣？不是說新聞早反應嗎",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1768912320000,
@@ -324,13 +467,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "加碼 | 記憶體\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/20 20:32 明天一定持續買進記憶體",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1769043840000,
@@ -341,13 +490,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損 | 記憶體\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/22 09:04 停損到剩一張 3張當作白做工",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1769070660000,
@@ -358,6 +513,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 記憶體\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/22 16:31 回不去了 等着停損 房貸怎麼辦",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -369,6 +526,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "被套 | 群創\n指標: 偏多 ▲ | 強度: ★★☆\nFB 01/23 09:17 相信群創 身心受創 相信黃董 真的不懂",
+      "ticker": "3481.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -380,6 +539,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "被套 | 旺宏\n指標: 偏多 ▲ | 強度: ★★☆\nFB 01/26 09:36 輕鬆拿捏 廢物旺宏",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -391,13 +552,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "持有看多 | 美光(MU)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 01/28 14:48 加入美光 人生發光",
+      "ticker": "MU",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1769797080000,
@@ -408,13 +575,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 白銀\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/31 02:18 99我的白銀啊啊啊",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1770089280000,
@@ -425,6 +598,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損 | 白銀\n指標: 偏多 ▲ | 強度: ★★★\nFB 02/03 11:28 白銀就是詐騙 再也不買了",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -436,13 +611,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 美光(MU)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 02/03 16:48 大美光爸爸 我來了",
+      "ticker": "MU",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1770168060000,
@@ -453,6 +634,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 旺宏+華邦\n指標: 偏空 ▼ | 強度: ★★☆\nFB 02/04 09:21 今天買很強力的旺宏",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -464,13 +647,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損賣出 | 鈦昇\n指標: 偏多 ▲ | 強度: ★★★\nFB 02/09 09:29 持續停損鈦昇",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1770635400000,
@@ -481,6 +670,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "停損賣出\n指標: 偏多 ▲ | 強度: ★★☆\nFB 02/09 19:10 大盤漲800 我跌8%",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -492,13 +683,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 台積電(2330)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 02/11 09:58 乖乖買台積好了",
+      "ticker": "2330.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1770782580000,
@@ -509,6 +706,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 群創(3481)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 02/11 12:03 買進群創 身心受創",
+      "ticker": "3481.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -520,6 +719,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | TSM\n指標: 偏空 ▼ | 強度: ★★☆\nFB 02/25 01:12 上吧TSM!",
+      "ticker": "TSM",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -531,6 +732,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 美光(MU)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/05 13:32 美光爸爸我來了",
+      "ticker": "MU",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -542,13 +745,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 抄底虧7位數\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/09 09:24 一天33%沒了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1773106080000,
@@ -559,6 +768,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損賣出\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/10 09:28 已停損 一次19%",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -570,13 +781,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "抄底買進\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/11 09:24 相信光！",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1773421380000,
@@ -587,13 +804,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損賣出\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/14 01:03 壯烈犧牲",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1773592080000,
@@ -604,13 +827,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "加碼 | 旺宏\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/16 00:28 不停損 只攤平!",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1773912720000,
@@ -621,13 +850,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "賣出 | 白銀\n指標: 偏多 ▲ | 強度: ★★☆\nFB 03/19 17:32 該賣銀就該賣銀",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1773969420000,
@@ -638,6 +873,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "減碼 | 白銀\n指標: 偏多 ▲ | 強度: ★★☆\nFB 03/20 09:17 持續減碼白銀",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -649,6 +886,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "出清 | 個股+白銀\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/23 08:49 全部出清",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -660,6 +899,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "停損 | 白銀\n指標: 偏多 ▲ | 強度: ★★☆\nFB 03/23 19:12 白銀白白停損了？",
+      "ticker": "SI=F",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -671,6 +912,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損 | 旺宏\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/25 08:44 碰停損線認份停損",
+      "ticker": "2337.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -682,13 +925,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 華星光\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/25 09:26 只有他沒漲停",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1774490460000,
@@ -699,6 +948,8 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "持有看多 | 美光(MU)\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 03/26 10:01 美光在山裡面",
+      "ticker": "MU",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -710,13 +961,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "出清停損 | 華星光+記憶體\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/27 12:53 記憶體沒救了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1774832640000,
@@ -727,13 +984,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 期S&P石油\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/30 09:04 先占格位置就好",
+      "ticker": "CL=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1774843560000,
@@ -744,6 +1007,8 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "觀望 | 鈦昇\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 03/30 12:06 該去找阿鈦了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -755,13 +1020,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "賣華星光+買鈦昇\n指標: 偏多 ▲ | 強度: ★★☆\nFB 03/31 09:39 我是渣女！",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1774936560000,
@@ -772,6 +1043,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 抄底越抄越底\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/31 13:56 心碎了 年薪消失了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -783,13 +1056,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 0050\n指標: 偏空 ▼ | 強度: ★★☆\nFB 04/01 10:28 補一點好了",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775093460000,
@@ -800,6 +1079,8 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | QQQ+0050\n指標: 偏空 ▼ | 強度: ★★☆\nFB 04/02 09:31 你再跌我再買！74.90",
+      "ticker": "QQQ",
+      "ticker_is_fallback": false,
       "is_flip": false
     },
     {
@@ -811,13 +1092,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "停損 | MU\n指標: 偏多 ▲ | 強度: ★★☆\nFB 04/02 22:24 分段停損 還有庫存",
+      "ticker": "MU",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775527320000,
@@ -828,13 +1115,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "買進 | 布蘭特正2+石油\n指標: 偏空 ▼ | 強度: ★★☆\nFB 04/07 10:02 Make Oil Great Again!",
+      "ticker": "CL=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775608020000,
@@ -845,13 +1138,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "被套 | 布蘭特正2\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/08 08:27 要住公園了嗎",
+      "ticker": "CL=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775610900000,
@@ -862,13 +1161,19 @@
       "strength": 2,
       "strength_label": "★★☆",
       "tooltip": "加碼 | 布蘭特正2\n指標: 偏空 ▼ | 強度: ★★☆\nFB 04/08 09:15 太痛了 油正二又30%",
+      "ticker": "CL=F",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775697840000,
@@ -879,13 +1184,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "停損鈦昇+買信驊\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 09:24 停損渣男鈦昇",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "unknown"
+      "outcome": "unknown",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775708100000,
@@ -896,6 +1207,8 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "驗證 | 鈦昇漲停\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 12:15 停損後鈦昇漲停",
+      "ticker": "0050.TW",
+      "ticker_is_fallback": true,
       "is_flip": false
     },
     {
@@ -907,13 +1220,19 @@
       "strength": 3,
       "strength_label": "★★★",
       "tooltip": "買進 | 台光電+亞翔\n指標: 偏空 ▼ | 強度: ★★★\nFB 04/10 10:04 買趨勢猛的！破除迷信！",
+      "ticker": "2383.TW",
+      "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": null,
       "entry_price": null,
-      "exit_price": null,
       "exit_date": null,
+      "exit_price": null,
       "pnl_pct": null,
-      "outcome": "open"
+      "outcome": "open",
+      "exit_date_a": null,
+      "exit_price_a": null,
+      "pnl_pct_a": null,
+      "outcome_a": "open"
     },
     {
       "unix_ms": 1775792400000,
@@ -924,6 +1243,8 @@
       "strength": 1,
       "strength_label": "★☆☆",
       "tooltip": "持有 | 台光電\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 04/10 11:40 我不是冥燈！",
+      "ticker": "2383.TW",
+      "ticker_is_fallback": false,
       "is_flip": false
     }
   ]
