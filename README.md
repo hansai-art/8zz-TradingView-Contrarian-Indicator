@@ -80,6 +80,95 @@
 
 ---
 
+## GitHub Pages 即時戰績看板
+
+> 部署一個靜態網頁，即時顯示所有反指標事件的方向、強度，以及對應 0050.TW 的勝敗結果。
+
+### 📊 看板功能
+
+| 功能 | 說明 |
+|------|------|
+| **勝率統計卡** | 總勝率、勝/敗/進行中筆數、平均報酬率 |
+| **方向分析圖** | 偏多 ▲ vs 偏空 ▼ 各自的勝敗柱狀圖 |
+| **強度別勝率** | ★☆☆ / ★★☆ / ★★★ 三個強度的勝率比較 |
+| **完整事件列表** | 所有事件（含進場日/出場日/報酬率），可按方向、強度、結果篩選 |
+
+### 啟用步驟（Repo Owner，一次設定）
+
+1. 至 GitHub Repo → **Settings → Pages**
+2. **Source** 選 `Deploy from a branch`
+3. **Branch** 選 `main`，**Folder** 選 `/docs`
+4. 儲存後等約 1 分鐘，頁面網址為：
+   ```
+   https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/
+   ```
+5. 每次 GitHub Actions 執行時，`docs/events.json` 會自動更新，看板即時反映最新資料
+
+### 技術說明
+
+- `scripts/build_site_data.py` — 解析 `.pine` 檔案取出所有事件，使用 `yfinance` 抓取 0050.TW 歷史收盤價，計算每個翻轉訊號的報酬率與勝敗，寫入 `docs/events.json`
+- `docs/index.html` — 純靜態頁（無後端），讀取 `events.json` 後在瀏覽器端渲染，使用 Chart.js 繪製圖表
+- 每次 GitHub Actions 排程執行完畢後自動更新，**不需要額外伺服器**
+
+---
+
+## 自動更新 Pipeline
+
+> 此功能讓指標的事件庫在臺股與美股開盤時段全自動抓取並更新，**一天僅觸發約 11 次**，GitHub Actions 免費額度完全足夠。
+
+### 架構圖
+
+```
+FB 公開貼文
+    ↓ (facebook-scraper)
+GitHub Actions 排程觸發
+    ↓ (scripts/fetch_fb_events.py)
+規則式情緒分類器
+    ↓ (scripts/update_pine_script.py)
+自動更新 8zz-indicator.pine → git push
+    ↓
+使用者取得最新版本（見下方三種方案）
+```
+
+### 排程規則
+
+| 時段 | Cron (UTC) | 對應台灣時間 | 次數 |
+|------|-----------|-------------|------|
+| 臺股開盤 09:00–13:30 | `0,30 1,2,3,4,5 * * 1-5` | 週一～五每 30 分鐘 | 9次/天 |
+| 美股開盤 09:30 EST | `30 14 * * 1-5` (標準時) / `30 13 * * 1-5` (夏令時) | 台灣時間 22:30 / 21:30 | 1次/天 |
+
+### 如何取得最新版本
+
+| 方案 | 說明 |
+|------|------|
+| **A（手動）** | 訂閱 GitHub Releases 通知，有新事件時去複製最新 `.pine` 貼入 TradingView |
+| **B（半自動）** | 從 [Raw URL](https://raw.githubusercontent.com/hansai-art/8zz-Contrarian-Indicator-TradingView/main/8zz-indicator.pine) 直接載入腳本，之後每次開圖自動讀最新版 |
+| **C（全自動 Pro）** | 後端爬到新事件後透過 TradingView Webhook Alert 直接推送訊號給訂閱者 |
+
+### 啟用步驟（Repo Owner）
+
+1. 至 GitHub Repo → **Settings → Secrets and variables → Actions** 新增：
+   - `FB_PAGE_ID`：追蹤的公開 FB 頁面 ID 或 username
+   - `FB_COOKIES`（選填）：若頁面需登入，填入 JSON 格式 cookie 字串
+2. 確認 `.github/workflows/fetch-fb-events.yml` 已合併到 `main` branch
+3. GitHub Actions 會依排程自動執行，有新事件時自動 commit & push
+
+### 情緒分類規則（`scripts/fetch_fb_events.py`）
+
+| 關鍵字（觸發即分類） | 方向 | 強度 |
+|----------------------|------|------|
+| 停損、認賠、虧損、畢業、爆倉 | 偏多 ▲ | ★★★ |
+| 被套、跌停、房貸、住套房 | 偏多 ▲ | ★★★ |
+| 賣出、停利、出場 | 偏多 ▲ | ★★☆ |
+| 觀望、等、修正、怕 | 偏多 ▲ | ★☆☆ |
+| 漲停買、漲停追、追漲 | 偏空 ▼ | ★★★ |
+| 買進、加碼、補倉、看多 | 偏空 ▼ | ★★☆ |
+| 持有、長期、慢慢漲 | 偏空 ▼ | ★☆☆ |
+
+> 規則採**首次命中**（first-match wins），可在 `scripts/fetch_fb_events.py` 的 `SENTIMENT_RULES` 列表中調整優先順序與關鍵字。
+
+---
+
 ## Community vs Paid 路線
 
 | 模組 | Community Edition | Pro （規劃） | Elite （規劃） |
@@ -184,7 +273,22 @@
 
 ```text
 8zz-Contrarian-Indicator-TradingView/
-├── 8zz-indicator.pine
+├── 8zz-indicator.pine             ← Pine Script 指標（自動更新）
+├── .github/
+│   └── workflows/
+│       └── fetch-fb-events.yml   ← GitHub Actions 排程工作流程
+├── scripts/
+│   ├── fetch_fb_events.py        ← FB 爬蟲 + 情緒分類器
+│   ├── update_pine_script.py     ← Pine Script 自動更新器
+│   ├── build_site_data.py        ← 戰績計算器（yfinance → events.json）
+│   └── requirements.txt          ← Python 依賴清單
+├── docs/                         ← GitHub Pages 根目錄
+│   ├── index.html                ← 即時戰績看板
+│   ├── events.json               ← 每次 Actions 自動生成的資料
+│   └── .nojekyll                 ← 停用 Jekyll 處理
+├── data/
+│   ├── last_event_timestamp.json ← 爬蟲狀態（避免重複插入）
+│   └── new_events.json           ← 每次執行的暫存事件（腳本間傳遞）
 ├── assets/
 │   ├── backtest-0050.jpg
 │   ├── 001.jpg
