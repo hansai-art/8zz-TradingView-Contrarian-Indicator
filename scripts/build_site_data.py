@@ -149,6 +149,7 @@ def compute_outcomes(events: list[dict], prices: dict[str, float]) -> list[dict]
     today = datetime.now(timezone.utc)
 
     for i, flip in enumerate(flips):
+        is_last = i + 1 >= len(flips)
         entry_dt = datetime.fromisoformat(flip["time_utc"])
         entry_date, entry_price = nearest_close(prices, entry_dt)
 
@@ -158,14 +159,15 @@ def compute_outcomes(events: list[dict], prices: dict[str, float]) -> list[dict]
             flip["exit_price"] = None
             flip["exit_date"] = None
             flip["pnl_pct"] = None
-            flip["outcome"] = "unknown"
+            # Last flip has no closing signal yet → it is always "open"
+            flip["outcome"] = "open" if is_last else "unknown"
             continue
 
         flip["entry_date"] = entry_date
         flip["entry_price"] = round(entry_price, 2)
 
         # Exit = next flip's event time, or today if still open
-        if i + 1 < len(flips):
+        if not is_last:
             exit_dt = datetime.fromisoformat(flips[i + 1]["time_utc"])
             is_open = False
         else:

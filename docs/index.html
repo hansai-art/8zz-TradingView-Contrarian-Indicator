@@ -342,16 +342,24 @@
   $('main-content').style.display = 'block';
 
   // ── Stats cards ─────────────────────────────────────────────────────────────
-  const winRateColor = stats.win_rate >= 60 ? 'var(--green)' : stats.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
-  $('s-winrate').textContent  = stats.win_rate + '%';
-  $('s-winrate').style.color  = winRateColor;
-  $('s-wins').textContent     = stats.wins;
-  $('s-losses').textContent   = stats.losses;
-  $('s-open').textContent     = stats.open_flips;
-  const avg = stats.avg_pnl_pct;
-  $('s-avgpnl').textContent   = (avg >= 0 ? '+' : '') + avg + '%';
-  $('s-avgpnl').style.color   = avg >= 0 ? 'var(--green)' : 'var(--red)';
-  $('s-total').textContent    = stats.total_events;
+  const hasResolved = stats.resolved_flips > 0;
+  if (hasResolved) {
+    const winRateColor = stats.win_rate >= 60 ? 'var(--green)' : stats.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
+    $('s-winrate').textContent = stats.win_rate + '%';
+    $('s-winrate').style.color = winRateColor;
+    const avg = stats.avg_pnl_pct;
+    $('s-avgpnl').textContent  = (avg >= 0 ? '+' : '') + avg + '%';
+    $('s-avgpnl').style.color  = avg >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    $('s-winrate').textContent = '計算中';
+    $('s-winrate').style.color = 'var(--muted)';
+    $('s-avgpnl').textContent  = '計算中';
+    $('s-avgpnl').style.color  = 'var(--muted)';
+  }
+  $('s-wins').textContent   = stats.wins;
+  $('s-losses').textContent = stats.losses;
+  $('s-open').textContent   = stats.open_flips;
+  $('s-total').textContent  = stats.total_events;
 
   const gen = new Date(stats.generated_at);
   $('generated-at').textContent = '更新時間：' + gen.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
