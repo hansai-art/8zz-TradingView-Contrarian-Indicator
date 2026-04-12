@@ -72,16 +72,18 @@ def escape_pine_string(text: str) -> str:
 
 
 def build_push_block(event: dict) -> str:
-    """Return the four array.push lines for a single event."""
-    ts = event["unix_ms"]
-    d = event["direction"]
-    s = event["strength"]
-    tip = escape_pine_string(event["tooltip"])
+    """Return the five array.push lines for a single event."""
+    ts     = event["unix_ms"]
+    d      = event["direction"]
+    s      = event["strength"]
+    tip    = escape_pine_string(event["tooltip"])
+    ticker = escape_pine_string(event.get("ticker", ""))
     return (
         f"    array.push(evt_time, {ts})\n"
         f"    array.push(evt_dir, {d})\n"
         f"    array.push(evt_str, {s})\n"
         f'    array.push(evt_tips, "{tip}")\n'
+        f'    array.push(evt_ticker, "{ticker}")\n'
     )
 
 
