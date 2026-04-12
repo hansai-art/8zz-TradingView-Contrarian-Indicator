@@ -39,6 +39,8 @@ OUTPUT_FILE = ROOT / "docs" / "events.json"
 FALLBACK_TICKER = "0050.TW"
 # Number of trading days for Mode A fixed-bar exit
 MODE_A_HOLD_BARS = 14
+# Range of hold_bars to test for sensitivity analysis
+SENSITIVITY_RANGE = range(7, 22)  # 7 to 21 inclusive
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -135,7 +137,7 @@ def fetch_all_prices(events: list[dict], first_dt: datetime, last_dt: datetime) 
     Returns {ticker: {date_str: price}}.
     Falls back to FALLBACK_TICKER data when a ticker yields no data.
     """
-    tickers = sorted({e["ticker"] for e in events})
+    tickers = sorted({e["ticker"] for e in events} | {FALLBACK_TICKER})
     all_prices: dict[str, dict[str, float]] = {}
 
     for ticker in tickers:
@@ -379,6 +381,106 @@ def build_stats(events: list[dict]) -> dict:
     }
 
 
+def build_equity_curves(
+    events: list[dict],
+    all_prices: dict[str, dict[str, float]],
+) -> dict:
+    """
+    Build cumulative equity curves (starting value = 100) for:
+      • Mode B (flip-based exits)
+      • Mode A (fixed trading-day exits)
+      • 0050.TW buy-and-hold benchmark
+    Returns:
+        {
+            "mode_b": [{"date": str, "value": float}, ...],
+            "mode_a": [{"date": str, "value": float}, ...],
+            "benchmark_0050": [{"date": str, "value": float}, ...],
+        }
+    """
+    flips = [e for e in events if e["is_flip"]]
+    first_entry: str | None = next(
+        (f["entry_date"] for f in flips if f.get("entry_date")), None
+    )
+
+    # ── Mode B ────────────────────────────────────────────────────────
+    curve_b: list[dict] = []
+    equity_b = 100.0
+    if first_entry:
+        curve_b.append({"date": first_entry, "value": round(equity_b, 2)})
+    for flip in flips:
+        outcome = flip.get("outcome")
+        pnl = flip.get("pnl_pct")
+        exit_d = flip.get("exit_date")
+        if outcome in ("win", "loss", "flat") and pnl is not None and exit_d:
+            equity_b *= 1 + pnl / 100
+            curve_b.append({"date": exit_d, "value": round(equity_b, 2)})
+        elif outcome == "open" and pnl is not None and exit_d:
+            mtm = equity_b * (1 + pnl / 100)
+            curve_b.append({"date": exit_d, "value": round(mtm, 2)})
+
+    # ── Mode A ────────────────────────────────────────────────────────
+    curve_a: list[dict] = []
+    equity_a = 100.0
+    if first_entry:
+        curve_a.append({"date": first_entry, "value": round(equity_a, 2)})
+    # Sort by exit date so compounding is in chronological order
+    mode_a_resolved = sorted(
+        [f for f in flips if f.get("outcome_a") in ("win", "loss", "flat")
+         and f.get("pnl_pct_a") is not None and f.get("exit_date_a")],
+        key=lambda f: f["exit_date_a"],
+    )
+    for flip in mode_a_resolved:
+        equity_a *= 1 + flip["pnl_pct_a"] / 100
+        curve_a.append({"date": flip["exit_date_a"], "value": round(equity_a, 2)})
+
+    # ── 0050 benchmark ────────────────────────────────────────────────
+    curve_0050: list[dict] = []
+    bench_prices = all_prices.get(FALLBACK_TICKER, {})
+    start_date = first_entry
+    if start_date and bench_prices:
+        sorted_dates = sorted(bench_prices.keys())
+        start_idx = next(
+            (i for i, d in enumerate(sorted_dates) if d >= start_date), None
+        )
+        if start_idx is not None:
+            base = bench_prices[sorted_dates[start_idx]]
+            for d in sorted_dates[start_idx:]:
+                curve_0050.append(
+                    {"date": d, "value": round(bench_prices[d] / base * 100, 2)}
+                )
+
+    return {"mode_b": curve_b, "mode_a": curve_a, "benchmark_0050": curve_0050}
+
+
+def sensitivity_analysis(
+    events: list[dict],
+    all_prices: dict[str, dict[str, float]],
+) -> list[dict]:
+    """
+    Test Mode A win rate and avg PnL for hold_bars in SENSITIVITY_RANGE.
+    Returns a list sorted by hold_bars:
+        [{"hold_bars": int, "win_rate": float, "avg_pnl_pct": float,
+          "wins": int, "losses": int, "resolved": int}, ...]
+    """
+    results = []
+    for bars in SENSITIVITY_RANGE:
+        # Deep-copy flip fields so we don't clobber the real Mode A results
+        import copy
+        tmp_events = copy.deepcopy(events)
+        tmp_events = compute_outcomes_mode_a(tmp_events, all_prices, hold_bars=bars)
+        flips = [e for e in tmp_events if e["is_flip"]]
+        s = _build_mode_stats(flips, outcome_key="outcome_a", pnl_key="pnl_pct_a")
+        results.append({
+            "hold_bars": bars,
+            "win_rate": s["win_rate"],
+            "avg_pnl_pct": s["avg_pnl_pct"],
+            "wins": s["wins"],
+            "losses": s["losses"],
+            "resolved": s["resolved_flips"],
+        })
+    return results
+
+
 def main() -> None:
     pine_text = PINE_FILE.read_text(encoding="utf-8")
     events = parse_events(pine_text)
@@ -402,7 +504,23 @@ def main() -> None:
     events = compute_outcomes_mode_a(events, all_prices, hold_bars=MODE_A_HOLD_BARS)
     stats = build_stats(events)
 
-    output = {"stats": stats, "events": events}
+    print("Running hold_bars sensitivity analysis …")
+    sens = sensitivity_analysis(events, all_prices)
+    best = max(sens, key=lambda r: (r["win_rate"], r["avg_pnl_pct"])) if sens else None
+    if best:
+        print(
+            f"   Best hold_bars = {best['hold_bars']}  "
+            f"win_rate {best['win_rate']}%  avg {best['avg_pnl_pct']:+.2f}%"
+        )
+
+    equity_curves = build_equity_curves(events, all_prices)
+
+    output = {
+        "stats": stats,
+        "events": events,
+        "equity_curves": equity_curves,
+        "sensitivity": sens,
+    }
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_FILE.write_text(
         json.dumps(output, ensure_ascii=False, indent=2),
