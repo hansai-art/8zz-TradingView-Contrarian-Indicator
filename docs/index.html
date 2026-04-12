@@ -233,8 +233,8 @@
 
     <!-- Mode tabs -->
     <div class="mode-tabs">
-      <button class="mode-tab"        id="tab-b" onclick="switchMode('b')">Mode B｜翻轉訊號出場</button>
-      <button class="mode-tab active" id="tab-a" onclick="switchMode('a')">Mode A｜固定 <span id="hold-bars-label">14</span> 根 K 棒出場</button>
+      <button class="mode-tab active" id="tab-b" onclick="switchMode('b')">Mode B｜翻轉訊號出場</button>
+      <button class="mode-tab"        id="tab-a" onclick="switchMode('a')">Mode A｜固定 <span id="hold-bars-label">14</span> 根 K 棒出場</button>
     </div>
     <div class="mode-desc" id="mode-desc">
       <strong>Mode B（翻轉平倉）</strong>：每筆翻轉訊號持有至下一次方向翻轉時出場。報酬以各事件指定的標的計算。
@@ -571,10 +571,8 @@
 
   initEquityChart();
   initSensitivityTable();
-  // Apply initial Mode A visual state (columns, sensitivity table, chart highlight)
-  updateEquityChart('a');
-  $('sensitivity-wrap').style.display = 'block';
-  $('mode-desc').innerHTML = `<strong>Mode A（固定 ${holdBars} 根 30 分鐘K棒）</strong>：每筆翻轉訊號進場後，持滿 ${holdBars} 根 30 分鐘K棒出場（≈ 8.5 小時）。報酬以各事件指定的標的計算。`;
+  // Default to Mode B (higher win rate 81.5%)
+  switchMode('b');
 
   // ── Table rendering ─────────────────────────────────────────────────────────
   function outcomeBadge(o) {
