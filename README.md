@@ -6,6 +6,19 @@
 
 ---
 
+## 📊 即時戰績看板（GitHub Pages）
+
+**👉 [https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)**
+
+> 📌 **書籤這個頁面就夠了！**  
+> 每次 GitHub Actions 執行完畢後頁面資料會**自動更新**，不需要手動重整或追蹤 repo。  
+> 勝率統計、方向分析、強度別勝率、完整事件列表，一切都在上面。
+
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-即時更新-00e676?style=flat-square&logo=github)](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)
+[![Auto Update](https://img.shields.io/badge/Auto%20Update-每日約11次-58a6ff?style=flat-square&logo=githubactions)](https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView/actions)
+
+---
+
 ## 專案定位
 
 這個專案已從單純的「迷因反指標」升級為 **社群情緒反轉框架（Community Edition）**。
@@ -82,7 +95,10 @@
 
 ## GitHub Pages 即時戰績看板
 
-> 部署一個靜態網頁，即時顯示所有反指標事件的方向、強度，以及對應 0050.TW 的勝敗結果。
+**👉 [https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)**
+
+一個純靜態看板，即時顯示所有反指標事件的方向、強度，以及對應 0050.TW 的勝敗結果。  
+**GitHub Actions 每天約觸發 11 次自動更新，頁面資料會隨之同步，書籤後無需再手動追蹤。**
 
 ### 📊 看板功能
 

@@ -154,6 +154,22 @@
       font-size: 12px;
     }
 
+    /* ── Auto-update notice ── */
+    .notice-bar {
+      background: #1a2a3a;
+      border: 1px solid var(--blue);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .notice-bar a { color: var(--blue); font-weight: 600; }
+
     /* ── Footer ── */
     footer {
       margin-top: 40px;
@@ -186,6 +202,14 @@
 
   <div id="loading">⏳ 載入資料中…</div>
   <div id="error">❌ 無法載入 events.json，請稍後再試。</div>
+
+  <!-- Auto-update notice -->
+  <div class="notice-bar">
+    📌 <strong>書籤這個頁面就夠了！</strong>
+    GitHub Actions 每天約觸發 <strong>11 次</strong>自動更新，資料會隨之同步，不需要手動追蹤 repo。
+    &nbsp;·&nbsp;
+    <a href="https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView" target="_blank">原始 Repo ↗</a>
+  </div>
 
   <div id="main-content" style="display:none">
 
