@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>8zz 反指標 — 即時戰績看板</title>
 
-  <!-- Chart.js from CDN -->
+  <!-- Chart.js + date adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
   <style>
     /* ── Reset & base ── */
@@ -195,22 +196,6 @@
     /* Mode A columns hidden by default, shown via JS */
     .col-mode-a { display: none; }
 
-    /* ── Auto-update notice ── */
-    .notice-bar {
-      background: #1a2a3a;
-      border: 1px solid var(--blue);
-      border-radius: 8px;
-      padding: 10px 16px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      color: var(--blue);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .notice-bar a { color: var(--blue); font-weight: 600; }
-
     /* ── Footer ── */
     footer {
       margin-top: 40px;
@@ -243,14 +228,6 @@
 
   <div id="loading">⏳ 載入資料中…</div>
   <div id="error">❌ 無法載入 events.json，請稍後再試。</div>
-
-  <!-- Auto-update notice -->
-  <div class="notice-bar">
-    📌 <strong>書籤這個頁面就夠了！</strong>
-    GitHub Actions 每天約觸發 <strong>11 次</strong>自動更新，資料會隨之同步，不需要手動追蹤 repo。
-    &nbsp;·&nbsp;
-    <a href="https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView" target="_blank">原始 Repo ↗</a>
-  </div>
 
   <div id="main-content" style="display:none">
 
@@ -291,15 +268,28 @@
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="charts-row">
+    <!-- Portfolio Equity Chart -->
+    <div class="charts-row" style="grid-template-columns:1fr;">
       <div class="chart-card">
-        <h3>翻轉訊號方向分析（Mode A vs B）</h3>
-        <canvas id="dirChart" height="200"></canvas>
+        <h3 id="equity-chart-title">資產增長曲線（起始 100）｜反指標 Mode B vs 買入持有 0050</h3>
+        <canvas id="equityChart" height="110"></canvas>
       </div>
-      <div class="chart-card">
-        <h3>強度別勝率（★☆☆ / ★★☆ / ★★★）— Mode A vs B</h3>
-        <canvas id="strChart" height="200"></canvas>
+    </div>
+
+    <!-- Hold-bars sensitivity table -->
+    <div id="sensitivity-wrap" style="margin-bottom:28px;display:none">
+      <div style="color:var(--muted);font-size:12px;margin-bottom:8px;">
+        Mode A 勝率 vs 持有天數（點選切換 Mode A 可見）
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="sens-table" style="font-size:12px;min-width:520px;">
+          <thead>
+            <tr>
+              <th>持有天數</th><th>勝率</th><th>平均報酬</th><th>勝</th><th>敗</th><th>已結算</th>
+            </tr>
+          </thead>
+          <tbody id="sens-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -379,14 +369,13 @@
   let allEvents = [];
   let stats = {};
   let currentMode = 'b'; // 'a' or 'b'
-  let dirChartObj = null;
-  let strChartObj = null;
 
   // ── Fetch data ──────────────────────────────────────────────────────────────
   try {
     const res = await fetch('events.json');
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
+    window._data = data;
     stats    = data.stats;
     allEvents = data.events.slice().sort((a, b) => b.unix_ms - a.unix_ms);
   } catch (e) {
@@ -428,7 +417,7 @@
     });
 
     renderStats(mode);
-    updateCharts(mode);
+    updateEquityChart(mode);
     applyFilters();
   };
 
@@ -460,72 +449,78 @@
 
   renderStats('b');
 
-  // ── Charts ───────────────────────────────────────────────────────────────────
-  const CHART_COLORS = {
-    bWin:  'rgba(0,230,118,0.75)',
-    bLoss: 'rgba(255,23,68,0.75)',
-    aWin:  'rgba(88,166,255,0.65)',
-    aLoss: 'rgba(255,112,67,0.65)',
-  };
-  const CHART_OPTS_BASE = {
-    plugins: { legend: { labels: { color: '#8b949e' } } },
-    scales: {
-      x: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-      y: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-    },
-  };
+  // ── Equity Chart ─────────────────────────────────────────────────────────────
+  let equityChartObj = null;
 
-  function buildDirData(ms, label, winColor, lossColor) {
-    return [
-      { label: label + ' 勝', data: [ms.bullish_wins, ms.bearish_wins], backgroundColor: winColor },
-      {
-        label: label + ' 敗',
-        data: [ms.bullish_flips - ms.bullish_wins, ms.bearish_flips - ms.bearish_wins],
-        backgroundColor: lossColor,
-      },
-    ];
+  function toXY(arr) {
+    return (arr || []).map(p => ({ x: p.date, y: p.value }));
   }
 
-  function buildStrData(ms, label, color) {
-    const bs = ms.by_strength;
-    return {
-      label: label + ' 勝率 %',
-      data: [bs['1'].win_rate, bs['2'].win_rate, bs['3'].win_rate],
-      backgroundColor: color,
-    };
-  }
+  function initEquityChart() {
+    const curves = (window._data || {}).equity_curves || {};
+    const bData    = toXY(curves.mode_b);
+    const aData    = toXY(curves.mode_a);
+    const benchData = toXY(curves.benchmark_0050);
 
-  function initCharts() {
-    const mb = stats.mode_b, ma = stats.mode_a;
-
-    dirChartObj = new Chart($('dirChart'), {
-      type: 'bar',
+    equityChartObj = new Chart($('equityChart'), {
+      type: 'line',
       data: {
-        labels: ['偏多 ▲', '偏空 ▼'],
         datasets: [
-          ...buildDirData(mb, 'B', CHART_COLORS.bWin, CHART_COLORS.bLoss),
-          ...buildDirData(ma, 'A', CHART_COLORS.aWin, CHART_COLORS.aLoss),
-        ],
-      },
-      options: CHART_OPTS_BASE,
-    });
-
-    strChartObj = new Chart($('strChart'), {
-      type: 'bar',
-      data: {
-        labels: ['★☆☆ (弱)', '★★☆ (中)', '★★★ (強)'],
-        datasets: [
-          buildStrData(mb, 'B', 'rgba(0,230,118,0.65)'),
-          buildStrData(ma, 'A', 'rgba(88,166,255,0.65)'),
+          {
+            label: 'Mode B（翻轉出場）',
+            data: bData,
+            borderColor: 'rgba(0,230,118,0.9)',
+            backgroundColor: 'rgba(0,230,118,0.08)',
+            fill: false,
+            tension: 0,
+            pointRadius: bData.length <= 30 ? 4 : 2,
+            borderWidth: 2,
+          },
+          {
+            label: `Mode A（固定 ${holdBars} 棒）`,
+            data: aData,
+            borderColor: 'rgba(88,166,255,0.9)',
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            fill: false,
+            tension: 0,
+            pointRadius: aData.length <= 30 ? 4 : 2,
+            borderWidth: 2,
+          },
+          {
+            label: '0050 買入持有',
+            data: benchData,
+            borderColor: 'rgba(139,148,158,0.6)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.15,
+            pointRadius: 0,
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+          },
         ],
       },
       options: {
-        plugins: { legend: { labels: { color: '#8b949e' } } },
+        animation: false,
+        plugins: {
+          legend: { labels: { color: '#8b949e', boxWidth: 16 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1),
+            },
+          },
+        },
         scales: {
-          x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+          x: {
+            type: 'time',
+            time: { unit: 'month', tooltipFormat: 'yyyy-MM-dd' },
+            ticks: { color: '#8b949e', maxTicksLimit: 8 },
+            grid: { color: '#30363d' },
+          },
           y: {
-            min: 0, max: 100,
-            ticks: { color: '#8b949e', callback: v => v + '%' },
+            ticks: {
+              color: '#8b949e',
+              callback: v => v.toFixed(0),
+            },
             grid: { color: '#30363d' },
           },
         },
@@ -533,29 +528,49 @@
     });
   }
 
-  function updateCharts(mode) {
-    // Highlight the selected mode's datasets by adjusting opacity
-    if (!dirChartObj) return;
-    const activeAlpha = 0.85, inactiveAlpha = 0.25;
+  function updateEquityChart(mode) {
+    if (!equityChartObj) return;
+    const ds = equityChartObj.data.datasets;
+    // ds[0]=Mode B, ds[1]=Mode A, ds[2]=0050
+    const active = 0.9, dim = 0.3;
+    ds[0].borderColor = `rgba(0,230,118,${mode === 'b' ? active : dim})`;
+    ds[1].borderColor = `rgba(88,166,255,${mode === 'a' ? active : dim})`;
+    equityChartObj.update();
 
-    // dirChart: datasets 0,1 = Mode B; 2,3 = Mode A
-    const dirDs = dirChartObj.data.datasets;
-    [0, 1].forEach(i => {
-      dirDs[i].backgroundColor = dirDs[i].backgroundColor.replace(/[\d.]+\)$/, (mode === 'b' ? activeAlpha : inactiveAlpha) + ')');
-    });
-    [2, 3].forEach(i => {
-      dirDs[i].backgroundColor = dirDs[i].backgroundColor.replace(/[\d.]+\)$/, (mode === 'a' ? activeAlpha : inactiveAlpha) + ')');
-    });
-    dirChartObj.update();
+    // Update chart title
+    const titles = {
+      b: `資產增長曲線（起始 100）｜反指標 Mode B vs 買入持有 0050`,
+      a: `資產增長曲線（起始 100）｜反指標 Mode A（固定 ${holdBars} 棒）vs 買入持有 0050`,
+    };
+    $('equity-chart-title').textContent = titles[mode] || titles.b;
 
-    // strChart: dataset 0 = Mode B; 1 = Mode A
-    const strDs = strChartObj.data.datasets;
-    strDs[0].backgroundColor = 'rgba(0,230,118,' + (mode === 'b' ? activeAlpha : inactiveAlpha) + ')';
-    strDs[1].backgroundColor = 'rgba(88,166,255,' + (mode === 'a' ? activeAlpha : inactiveAlpha) + ')';
-    strChartObj.update();
+    // Show/hide sensitivity table
+    $('sensitivity-wrap').style.display = mode === 'a' ? 'block' : 'none';
   }
 
-  initCharts();
+  function initSensitivityTable() {
+    const sens = (window._data || {}).sensitivity || [];
+    if (!sens.length) return;
+    const tbody = $('sens-tbody');
+    const best = sens.reduce((a, b) => (b.win_rate > a.win_rate || (b.win_rate === a.win_rate && b.avg_pnl_pct > a.avg_pnl_pct)) ? b : a, sens[0]);
+    sens.forEach(row => {
+      const isBest = row.hold_bars === best.hold_bars;
+      const isDefault = row.hold_bars === holdBars;
+      const pnlColor = row.avg_pnl_pct >= 0 ? 'var(--green)' : 'var(--red)';
+      const wrColor  = row.win_rate >= 60 ? 'var(--green)' : row.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
+      tbody.innerHTML += `<tr style="${isBest ? 'background:#1a2a1a' : ''}">
+        <td style="font-weight:${isDefault?'700':'400'};color:${isDefault?'var(--blue)':''}">
+          ${row.hold_bars}${isDefault?' ★':''}${isBest && !isDefault?' 🏆':''}
+        </td>
+        <td style="color:${wrColor}">${row.win_rate}%</td>
+        <td style="color:${pnlColor}">${row.avg_pnl_pct >= 0 ? '+' : ''}${row.avg_pnl_pct.toFixed(2)}%</td>
+        <td>${row.wins}</td><td>${row.losses}</td><td>${row.resolved}</td>
+      </tr>`;
+    });
+  }
+
+  initEquityChart();
+  initSensitivityTable();
 
   // ── Table rendering ─────────────────────────────────────────────────────────
   function outcomeBadge(o) {
