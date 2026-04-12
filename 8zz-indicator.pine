@@ -377,9 +377,9 @@ volatilityOk = atrPct >= minAtrPct
 htfLongOk = htfClose >= htfEma
 htfShortOk = htfClose <= htfEma
 
-barsSinceSignal = not na(lastSignalBar) ? bar_index - lastSignalBar : na
-remainingBars = not na(barsSinceSignal) ? math.max(signalLifeBars - barsSinceSignal, 0) : na
-agedScore = not na(lastSignalScore) and not na(barsSinceSignal) ? clampFloat(lastSignalScore - barsSinceSignal * 25.0 / signalLifeBars, 0, 100) : na
+int barsSinceSignal = not na(lastSignalBar) ? bar_index - lastSignalBar : na
+int remainingBars = not na(barsSinceSignal) ? math.max(signalLifeBars - barsSinceSignal, 0) : na
+float agedScore = not na(lastSignalScore) and not na(barsSinceSignal) ? clampFloat(lastSignalScore - barsSinceSignal * 25.0 / signalLifeBars, 0, 100) : na
 isSignalExpired = currentDir != 0 and not na(remainingBars) and remainingBars <= 0
 effectiveDir = isSignalExpired ? 0 : currentDir
 expiredNow = isSignalExpired and (bar_index == 0 or not isSignalExpired[1])
@@ -489,11 +489,11 @@ if showBg and effectiveDir == -1
     bgCol := color.new(#FF1744, 95)
 bgcolor(bgCol)
 
-avgPnlA = winsA + lossesA > 0 ? pnlSumA / (winsA + lossesA) : na
+float avgPnlA = winsA + lossesA > 0 ? pnlSumA / (winsA + lossesA) : na
 judgedBCount = winsB + lossesB
-avgPnlB = judgedBCount > 0 ? pnlSumB / judgedBCount : na
-avgHoldB = judgedBCount > 0 ? totalHoldBarsB * 1.0 / judgedBCount : na
-recentWinB = na
+float avgPnlB = judgedBCount > 0 ? pnlSumB / judgedBCount : na
+float avgHoldB = judgedBCount > 0 ? totalHoldBarsB * 1.0 / judgedBCount : na
+float recentWinB = na
 if array.size(recentB) > 0
     recentWins = 0
     for i = 0 to array.size(recentB) - 1
@@ -507,7 +507,7 @@ riskPct = effectiveDir == 0 or na(agedScore) ? 0.0 : baseRiskPct * positionFacto
 stopAtr = profileStopAtr(assetProfile)
 riskText = effectiveDir == 0 ? "等待下一筆翻轉" : str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批 2-3 段"
 qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + qualityLabel(agedScore) + ")" : "尚無"
-ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
+float ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
 ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
 validityText = effectiveDir == 0 ? (isSignalExpired ? "等待新訊號" : "尚未啟用") : str.tostring(remainingBars) + " 根 K 棒內有效"
 filterCompact = formatFilterSummary(useTrendFilter, activeTrendOk, useRsiFilter, activeRsiOk, useVolFilter, volatilityOk, useHtfConfirm, activeHtfOk)
