@@ -1,0 +1,57 @@
+name: Deploy GitHub Pages
+
+on:
+  # Run after the data-update workflow finishes
+  workflow_run:
+    workflows: ["Fetch FB Events & Update Pine Script"]
+    types:
+      - completed
+
+  # Also deploy on any direct push that touches the docs/ folder
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+# Grant the minimum permissions required by actions/deploy-pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only allow one deployment at a time; cancel in-progress ones
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    # When triggered by workflow_run, only deploy if the upstream workflow succeeded
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload docs/ as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
