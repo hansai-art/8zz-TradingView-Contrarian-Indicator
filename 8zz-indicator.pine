@@ -15,12 +15,12 @@ showPanel  = input.bool(true, "顯示資訊面板", group=grp1)
 panelPos   = input.string("右下", "資訊面板位置", options=["右上", "右下"], group=grp1)
 
 grp2 = "訊號治理"
-holdBars = input.int(8, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
+holdBars = input.int(14, "固定觀察K棒數", minval=1, maxval=50, group=grp2, tooltip="模式A: 翻轉後固定幾根K棒判定勝敗")
 signalLifeBars = input.int(24, "訊號有效K棒", minval=1, maxval=200, group=grp2, tooltip="超過此 K 棒數後，訊號視為過期；箭頭仍保留在歷史上，但背景與有效方向會停用")
 showFilteredMarks = input.bool(false, "顯示被濾掉的原始訊號", group=grp2)
 
 grp3 = "濾網"
-useTrendFilter = input.bool(true, "EMA 趨勢濾網", group=grp3)
+useTrendFilter = input.bool(false, "EMA 趨勢濾網", group=grp3)
 emaLen = input.int(55, "EMA 長度", minval=5, maxval=300, group=grp3)
 useRsiFilter = input.bool(false, "RSI 動能濾網", group=grp3)
 rsiLen = input.int(14, "RSI 長度", minval=2, maxval=100, group=grp3)
@@ -187,9 +187,9 @@ if barstate.isfirst
     array.push(evt_str, 3)
     array.push(evt_tips, "停損 | 記憶體\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/22 09:04 停損到剩一張 3張當作白做工")
     array.push(evt_time, 1769070660000)
-    array.push(evt_dir, -1)
+    array.push(evt_dir, 1)
     array.push(evt_str, 3)
-    array.push(evt_tips, "被套 | 記憶體\n指標: 偏空 ▼ | 強度: ★★★\nFB 01/22 16:31 回不去了 等着停損 房貸怎麼辦")
+    array.push(evt_tips, "被套 | 記憶體\n指標: 偏多 ▲ | 強度: ★★★\nFB 01/22 16:31 回不去了 等着停損 房貸怎麼辦")
     array.push(evt_time, 1769131020000)
     array.push(evt_dir, -1)
     array.push(evt_str, 2)
@@ -243,9 +243,9 @@ if barstate.isfirst
     array.push(evt_str, 2)
     array.push(evt_tips, "買進 | 美光(MU)\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/05 13:32 美光爸爸我來了")
     array.push(evt_time, 1773019440000)
-    array.push(evt_dir, -1)
+    array.push(evt_dir, 1)
     array.push(evt_str, 3)
-    array.push(evt_tips, "被套 | 抄底虧7位數\n指標: 偏空 ▼ | 強度: ★★★\nFB 03/09 09:24 一天33%沒了")
+    array.push(evt_tips, "被套 | 抄底虧7位數\n指標: 偏多 ▲ | 強度: ★★★\nFB 03/09 09:24 一天33%沒了")
     array.push(evt_time, 1773106080000)
     array.push(evt_dir, 1)
     array.push(evt_str, 3)
@@ -303,9 +303,9 @@ if barstate.isfirst
     array.push(evt_str, 1)
     array.push(evt_tips, "觀望 | 鈦昇\n指標: 偏空 ▼ | 強度: ★☆☆\nFB 03/30 12:06 該去找阿鈦了")
     array.push(evt_time, 1774921140000)
-    array.push(evt_dir, -1)
+    array.push(evt_dir, 1)
     array.push(evt_str, 2)
-    array.push(evt_tips, "賣華星光+買鈦昇\n指標: 偏空 ▼ | 強度: ★★☆\nFB 03/31 09:39 我是渣女！")
+    array.push(evt_tips, "賣華星光+買鈦昇\n指標: 偏多 ▲ | 強度: ★★☆\nFB 03/31 09:39 我是渣女！")
     array.push(evt_time, 1774936560000)
     array.push(evt_dir, -1)
     array.push(evt_str, 3)
@@ -400,7 +400,7 @@ if totalFlips > 0 and currentDir != 0 and bar_index - flipBar == holdBars
 
 if array.size(evt_time) > 0
     for i = 0 to array.size(evt_time) - 1
-        if time >= array.get(evt_time, i) and time[1] < array.get(evt_time, i)
+        if time_close > array.get(evt_time, i) and time_close[1] <= array.get(evt_time, i)
             d = array.get(evt_dir, i)
             s = array.get(evt_str, i)
             tip = array.get(evt_tips, i)
@@ -414,7 +414,7 @@ if array.size(evt_time) > 0
             score = clampFloat(baseScore + filterScore, 0, 100)
             scoreText = "品質分數: " + str.tostring(score, "#.0") + " (" + qualityLabel(score) + ")"
             filterStatusText = "濾網: " + filterText
-            positionText = "建議倉位: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "%"
+            positionText = d == 1 ? "建議買入: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "% (依強度)" : "建議賣出: 20% / 次"
             richTip = tip + "\n" + scoreText + "\n" + filterStatusText + "\n" + positionText
 
             lastFilterText := filterText
@@ -505,7 +505,7 @@ activeRsiOk = effectiveDir == 1 ? rsiLongOk : effectiveDir == -1 ? rsiShortOk : 
 activeHtfOk = effectiveDir == 1 ? htfLongOk : effectiveDir == -1 ? htfShortOk : true
 riskPct = effectiveDir == 0 or na(agedScore) ? 0.0 : baseRiskPct * positionFactor(agedScore)
 stopAtr = profileStopAtr(assetProfile)
-riskText = effectiveDir == 0 ? "等待下一筆翻轉" : str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批 2-3 段"
+riskText = effectiveDir == 0 ? "等待下一筆翻轉" : effectiveDir == 1 ? str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批買入" : "每次賣 20% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 逐批出場"
 qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + qualityLabel(agedScore) + ")" : "尚無"
 float ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
 ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
