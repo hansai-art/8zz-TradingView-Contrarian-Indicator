@@ -42,6 +42,7 @@
 
 ![即時戰績看板](assets/dashboard.jpg)
 
+![TradingView 圖表](assets/tradingview.jpg)
 
 
 ## 如何加入 TradingView
