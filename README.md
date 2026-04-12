@@ -46,16 +46,15 @@
 
 ## 如何加入 TradingView
 
-在 TradingView 指標搜尋欄輸入 **8zz** 即可找到：
+> ⚠️ 本指標為**私人指標**，無法直接在公開搜尋欄找到。必須先透過以下連結將其加入收藏，才能在圖表中使用。
+
+**步驟：**
+
+1. 開啟指標頁面：**[tw.tradingview.com/script/IbVmSqfj/](https://tw.tradingview.com/script/IbVmSqfj/)**
+2. 點擊「加到最愛」（☆ 收藏）
+3. 回到圖表 → 開啟指標搜尋 → 切換到「收藏」分頁 → 搜尋 **8zz** 即可找到
 
 ![搜尋指標](assets/003.jpg)
-
-或手動貼入 Pine Script：
-
-1. 開啟 [TradingView](https://www.tradingview.com) → 圖表頁下方「Pine Script 編輯器」
-2. 複製 [`8zz-indicator.pine`](./8zz-indicator.pine) 的全部內容
-3. 貼入編輯器 → 儲存 → 點「加到圖表」
-4. 加到 **0050.TW、個股、或任何你想觀察的標的**皆可
 
 > 建議使用 **30 分鐘或 1 小時線**，與事件時間顆粒度最吻合。
 
