@@ -7,12 +7,14 @@ on:
     types:
       - completed
 
-  # Also deploy on any direct push that touches the docs/ folder
+  # Also deploy on any direct push to main (ensures first-time deploy works)
   push:
     branches:
       - main
-    paths:
-      - "docs/**"
+
+  # Redeploy on a daily schedule so the site stays up even without doc changes
+  schedule:
+    - cron: "0 6 * * *"
 
   # Allow manual trigger
   workflow_dispatch:
