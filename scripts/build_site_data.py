@@ -37,10 +37,11 @@ PINE_FILE = ROOT / "8zz-indicator.pine"
 OUTPUT_FILE = ROOT / "docs" / "events.json"
 
 FALLBACK_TICKER = "0050.TW"
-# Number of trading days for Mode A fixed-bar exit
-MODE_A_HOLD_BARS = 14
-# Range of hold_bars to test for sensitivity analysis
-SENSITIVITY_RANGE = range(7, 22)  # 7 to 21 inclusive
+# Number of K bars for Mode A fixed-bar exit (uses 30m bars when available, 1h next, daily fallback)
+# 17 × 30m bars ≈ 8.5 h ≈ 2 Taiwan trading sessions — highest win rate from sensitivity analysis
+MODE_A_HOLD_BARS = 17
+# Range of hold_bars to test for sensitivity analysis (starts at 14, removes low-performing rows)
+SENSITIVITY_RANGE = range(14, 51)  # 14 to 50 inclusive
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -102,12 +103,77 @@ def mark_flips(events: list[dict]) -> list[dict]:
     return events
 
 
+def _store_bar(dt_utc: datetime, close: float, prices: dict[str, float], fmt: str) -> None:
+    """Store a bar's close price under the bar's opening-time key and its daily key."""
+    prices[dt_utc.strftime(fmt)] = close
+    prices[dt_utc.strftime("%Y-%m-%d")] = close  # last bar of day wins → daily close
+
+
 def fetch_price_history(ticker: str, start: datetime, end: datetime) -> dict[str, float]:
     """
-    Return {date_str: close_price} for the given ticker and date range.
-    date_str format: 'YYYY-MM-DD'.
+    Return price data for the given ticker and date range.
+
+    Key formats:
+      '30m'   keys: 'YYYY-MM-DDTHH:MM'  (16 chars) – bar OPENING time, UTC
+      '1h'    keys: 'YYYY-MM-DDTHH'     (13 chars) – bar OPENING time, UTC
+      'daily' keys: 'YYYY-MM-DD'        (10 chars)
+
+    30m is limited to ~60 days by yfinance; 1h covers up to ~730 days.
+    All are attempted; daily is the final fallback.
     """
     end_padded = end + timedelta(days=5)
+    prices: dict[str, float] = {}
+
+    def _to_utc(idx) -> datetime:
+        if hasattr(idx, "tzinfo") and idx.tzinfo is not None:
+            return idx.astimezone(timezone.utc)
+        return idx.replace(tzinfo=timezone.utc)
+
+    # ── 30m (last ~60 days) ───────────────────────────────────────────────────
+    thirty_m_start = max(start, end - timedelta(days=59))
+    try:
+        df = yf.download(
+            ticker,
+            start=thirty_m_start.strftime("%Y-%m-%d"),
+            end=end_padded.strftime("%Y-%m-%d"),
+            interval="30m",
+            auto_adjust=True,
+            progress=False,
+        )
+        if df is not None and not df.empty:
+            for idx, row in df.iterrows():
+                close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
+                _store_bar(_to_utc(idx), close, prices, "%Y-%m-%dT%H:%M")
+    except Exception as exc:  # noqa: BLE001
+        print(f"WARNING: yfinance 30m error for {ticker}: {exc}")
+
+    # ── 1h (full range, fills gaps older than 60 days) ────────────────────────
+    try:
+        df = yf.download(
+            ticker,
+            start=start.strftime("%Y-%m-%d"),
+            end=end_padded.strftime("%Y-%m-%d"),
+            interval="1h",
+            auto_adjust=True,
+            progress=False,
+        )
+        if df is not None and not df.empty:
+            for idx, row in df.iterrows():
+                dt_utc = _to_utc(idx)
+                close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
+                h_key = dt_utc.strftime("%Y-%m-%dT%H")
+                d_key = dt_utc.strftime("%Y-%m-%d")
+                if h_key not in prices:          # don't overwrite 30m data
+                    prices[h_key] = close
+                if d_key not in prices:
+                    prices[d_key] = close
+    except Exception as exc:  # noqa: BLE001
+        print(f"WARNING: yfinance 1h error for {ticker}: {exc}")
+
+    if prices:
+        return prices
+
+    # ── Daily fallback ────────────────────────────────────────────────────────
     try:
         df = yf.download(
             ticker,
@@ -116,18 +182,14 @@ def fetch_price_history(ticker: str, start: datetime, end: datetime) -> dict[str
             auto_adjust=True,
             progress=False,
         )
+        if df is not None and not df.empty:
+            for idx, row in df.iterrows():
+                date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
+                close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
+                prices[date_str] = close
     except Exception as exc:  # noqa: BLE001
-        print(f"WARNING: yfinance error for {ticker}: {exc}")
-        return {}
+        print(f"WARNING: yfinance daily error for {ticker}: {exc}")
 
-    if df.empty:
-        return {}
-
-    prices: dict[str, float] = {}
-    for idx, row in df.iterrows():
-        date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
-        close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
-        prices[date_str] = close
     return prices
 
 
@@ -156,13 +218,52 @@ def fetch_all_prices(events: list[dict], first_dt: datetime, last_dt: datetime) 
 
 def nearest_close(prices: dict[str, float], target_dt: datetime) -> tuple[str | None, float | None]:
     """
-    Find the closest available trading day on or after target_dt.
-    Returns (date_str, price) or (None, None) if not found within 7 days.
+    Find the most recent completed bar's close BEFORE target_dt.
+
+    When someone posts on FB they have ALREADY traded, so the correct entry
+    price is the close of the bar that COMPLETED just before the post time
+    (the "previous bar" — one step back from the bar currently open).
+
+    Search order (backward):
+      1. 30m keys (16 chars): step back one 30m boundary, then scan back 8 h
+      2. 1h keys  (13 chars): checked on exact-hour boundaries during step 1
+      3. Daily keys (10 chars): fallback, searches backward up to 8 days
     """
+    if target_dt.tzinfo is None:
+        target_utc = target_dt.replace(tzinfo=timezone.utc)
+    else:
+        target_utc = target_dt.astimezone(timezone.utc)
+
+    # Snap to the START of the 30m bar currently open at target time
+    current_30m_start = target_utc.replace(
+        minute=0 if target_utc.minute < 30 else 30,
+        second=0,
+        microsecond=0,
+    )
+    # "Previous bar" = bar that JUST closed, one step back
+    prev_30m = current_30m_start - timedelta(minutes=30)
+
+    # Scan backward from the previous bar (up to 16 extra steps = 8 h total)
+    for step in range(17):
+        t = prev_30m - timedelta(minutes=30 * step)
+        k30 = t.strftime("%Y-%m-%dT%H:%M")
+        if k30 in prices:
+            return k30, prices[k30]
+        # On exact hours, also try the 1h key
+        if t.minute == 0:
+            k1h = t.strftime("%Y-%m-%dT%H")
+            if k1h in prices:
+                return k1h, prices[k1h]
+
+    # Daily fallback — search FORWARD (same or next trading day's close).
+    # For events older than 60 days we only have daily data; using the
+    # same-day close (after the post's intraday move) is the correct
+    # contrarian entry for those events.
     for delta in range(8):
-        d = (target_dt + timedelta(days=delta)).strftime("%Y-%m-%d")
+        d = (target_utc + timedelta(days=delta)).strftime("%Y-%m-%d")
         if d in prices:
             return d, prices[d]
+
     return None, None
 
 
@@ -180,9 +281,9 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
         prices = all_prices.get(flip["ticker"], {})
 
         entry_dt = datetime.fromisoformat(flip["time_utc"])
-        entry_date, entry_price = nearest_close(prices, entry_dt)
+        entry_key, entry_price = nearest_close(prices, entry_dt)
 
-        if entry_date is None or entry_price is None:
+        if entry_key is None or entry_price is None:
             flip["entry_date"] = None
             flip["entry_price"] = None
             flip["exit_date"] = None
@@ -191,7 +292,7 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
             flip["outcome"] = "open" if is_last else "unknown"
             continue
 
-        flip["entry_date"] = entry_date
+        flip["entry_date"] = entry_key   # keep full timestamp (e.g. "2026-04-09T01:00")
         flip["entry_price"] = round(entry_price, 2)
 
         if not is_last:
@@ -201,16 +302,16 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
             exit_dt = today
             is_open = True
 
-        exit_date, exit_price = nearest_close(prices, exit_dt)
+        exit_key, exit_price = nearest_close(prices, exit_dt)
 
-        if exit_date is None or exit_price is None:
+        if exit_key is None or exit_price is None:
             flip["exit_date"] = None
             flip["exit_price"] = None
             flip["pnl_pct"] = None
             flip["outcome"] = "open" if is_open else "unknown"
             continue
 
-        flip["exit_date"] = exit_date
+        flip["exit_date"] = exit_key   # keep full timestamp
         flip["exit_price"] = round(exit_price, 2)
 
         price_change_pct = (exit_price - entry_price) / entry_price * 100
@@ -245,18 +346,30 @@ def compute_outcomes_mode_a(
 
     for flip in flips:
         prices = all_prices.get(flip["ticker"], {})
-        sorted_dates = sorted(prices.keys())
 
-        # Resolve entry date (reuse Mode B result when available)
-        entry_date = flip.get("entry_date")
+        # Resolve entry key (reuse Mode B result; entry_date is the full key, e.g. "2026-04-09T01:00")
+        entry_key = flip.get("entry_date")   # Mode B stores full timestamp here
         entry_price_val = flip.get("entry_price")
 
-        if entry_date is None:
+        if entry_key is None:
             entry_dt = datetime.fromisoformat(flip["time_utc"])
-            entry_date, ep = nearest_close(prices, entry_dt)
-            entry_price_val = ep
+            entry_key, entry_price_val = nearest_close(prices, entry_dt)
 
-        if entry_date is None or entry_price_val is None or entry_date not in sorted_dates:
+        if entry_key is None or entry_price_val is None:
+            flip["exit_date_a"] = None
+            flip["exit_price_a"] = None
+            flip["pnl_pct_a"] = None
+            flip["outcome_a"] = "open"
+            continue
+
+        # Select sorted_bars matching the entry key's granularity:
+        #   16 chars = 30m  ("YYYY-MM-DDTHH:MM")
+        #   13 chars = 1h   ("YYYY-MM-DDTHH")
+        #   10 chars = daily ("YYYY-MM-DD")
+        key_len = len(entry_key)
+        sorted_bars = sorted(k for k in prices.keys() if len(k) == key_len)
+
+        if entry_key not in sorted_bars:
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
             flip["pnl_pct_a"] = None
@@ -265,7 +378,7 @@ def compute_outcomes_mode_a(
 
         entry_price_val = float(entry_price_val)
         try:
-            entry_idx = sorted_dates.index(entry_date)
+            entry_idx = sorted_bars.index(entry_key)
         except ValueError:
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
@@ -274,18 +387,18 @@ def compute_outcomes_mode_a(
             continue
 
         exit_idx = entry_idx + hold_bars
-        if exit_idx >= len(sorted_dates):
-            # Not enough trading days yet → position still open
+        if exit_idx >= len(sorted_bars):
+            # Not enough K bars yet → position still open
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
             flip["pnl_pct_a"] = None
             flip["outcome_a"] = "open"
             continue
 
-        exit_date_a = sorted_dates[exit_idx]
-        exit_price_a = prices[exit_date_a]
+        exit_bar_a = sorted_bars[exit_idx]
+        exit_price_a = prices[exit_bar_a]
 
-        flip["exit_date_a"] = exit_date_a
+        flip["exit_date_a"] = exit_bar_a   # full timestamp (30m/1h/daily matches entry granularity)
         flip["exit_price_a"] = round(exit_price_a, 2)
 
         price_change_pct = (exit_price_a - entry_price_val) / entry_price_val * 100
@@ -401,6 +514,8 @@ def build_equity_curves(
     first_entry: str | None = next(
         (f["entry_date"] for f in flips if f.get("entry_date")), None
     )
+    # Normalize for benchmark comparison (YYYY-MM-DD)
+    first_entry_date = first_entry[:10] if first_entry else None
 
     # ── Mode B ────────────────────────────────────────────────────────
     curve_b: list[dict] = []
@@ -423,7 +538,7 @@ def build_equity_curves(
     equity_a = 100.0
     if first_entry:
         curve_a.append({"date": first_entry, "value": round(equity_a, 2)})
-    # Sort by exit date so compounding is in chronological order
+    # Sort by exit timestamp so compounding is in chronological order
     mode_a_resolved = sorted(
         [f for f in flips if f.get("outcome_a") in ("win", "loss", "flat")
          and f.get("pnl_pct_a") is not None and f.get("exit_date_a")],
@@ -436,11 +551,11 @@ def build_equity_curves(
     # ── 0050 benchmark ────────────────────────────────────────────────
     curve_0050: list[dict] = []
     bench_prices = all_prices.get(FALLBACK_TICKER, {})
-    start_date = first_entry
+    start_date = first_entry_date   # YYYY-MM-DD for daily benchmark comparison
     if start_date and bench_prices:
-        sorted_dates = sorted(bench_prices.keys())
+        sorted_dates = sorted(d for d in bench_prices.keys() if len(d) == 10)
         start_idx = next(
-            (i for i, d in enumerate(sorted_dates) if d >= start_date), None
+            (i for i, d in enumerate(sorted_dates) if d >= start_date[:10]), None
         )
         if start_idx is not None:
             base = bench_prices[sorted_dates[start_idx]]
@@ -506,7 +621,8 @@ def main() -> None:
 
     print("Running hold_bars sensitivity analysis …")
     sens = sensitivity_analysis(events, all_prices)
-    best = max(sens, key=lambda r: (r["win_rate"], r["avg_pnl_pct"])) if sens else None
+    positive = [r for r in sens if r["avg_pnl_pct"] > 0]
+    best = max(positive if positive else sens, key=lambda r: r["avg_pnl_pct"]) if sens else None
     if best:
         print(
             f"   Best hold_bars = {best['hold_bars']}  "

@@ -1,320 +1,98 @@
-# 8zz 情緒反轉框架 | Community Edition
+# 8zz 情緒反轉框架 | Contrarian Indicator
 
-> **免責聲明：本指標僅供娛樂參考，不構成任何投資建議。**
->  
+> **免責聲明：本指標僅供娛樂參考，不構成任何投資建議。**  
 > © hansai-art | [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/)
 
 ---
 
-## 📊 即時戰績看板（GitHub Pages）
+## 這是什麼？
 
-**👉 [https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)**
+**「別人恐慌時貪婪，別人貪婪時恐慌。」**
 
-> 📌 **書籤這個頁面就夠了！**  
-> 每次 GitHub Actions 執行完畢後頁面資料會**自動更新**，不需要手動重整或追蹤 repo。  
-> 勝率統計、方向分析、強度別勝率、完整事件列表，一切都在上面。
+本指標追蹤某位公開 FB 投資散戶（代稱「巴尼尼」）的發文情緒，並以**逆向思維**產生買賣訊號：
 
-[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-即時更新-00e676?style=flat-square&logo=github)](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)
-[![Auto Update](https://img.shields.io/badge/Auto%20Update-每日約11次-58a6ff?style=flat-square&logo=githubactions)](https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView/actions)
+| 巴尼尼情緒 | 指標方向 | 背後邏輯 |
+|-----------|---------|---------|
+| 恐慌、被套、停損、痛苦 | 偏多 ▲ | 散戶最恐慌的時刻 = 底部附近 |
+| 追漲、自大、歡呼 | 偏空 ▼ | 散戶最亢奮的時刻 = 頂部附近 |
 
----
-
-## 專案定位
-
-這個專案已從單純的「迷因反指標」升級為 **社群情緒反轉框架（Community Edition）**。
-
-核心定位不再只是「她買我反著做」，而是：
-
-- **社群情緒**：以公開貼文事件作為情緒觸發點
-- **市場結構**：加入趨勢、動能、波動與高週期濾網
-- **風險管理**：提供倉位、停損 ATR 與訊號有效期建議
+> **核心原則：情緒 > 動作。** 就算他正在買進，但情緒是痛苦與被套，指標仍偏多▲。
 
 ---
 
-## Community Edition 已實作內容
+## 📊 即時戰績看板
 
-### 1. 訊號治理
+**👉 [hansai-art.github.io/8zz-Contrarian-Indicator-TradingView](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)**
 
-- 事件翻轉訊號 ▲ / ▼
-- 同向加碼訊號
-- **訊號品質分數（0~100）**
-- **A / B / C / D 品質等級**
-- **訊號有效 K 棒倒數**
-- 訊號過期後自動退出有效狀態
+書籤這個頁面就夠了，每日自動更新，不需要手動追蹤。
 
-### 2. 市場條件濾網
+### 目前戰績（2025/12 ~ 2026/04）
 
-可自由開關以下濾網：
+| 模式 | 勝率 | 勝 / 負 |
+|------|------|---------|
+| **Mode A（固定 17 根 30 分鐘K棒出場）** | **80.8%** | 21W / 5L |
+| Mode B（翻轉平倉） | 79.3% | 23W / 5L |
 
-- **EMA 趨勢濾網**：只放行與當前趨勢方向一致的訊號
-- **RSI 動能濾網**：只放行站上 / 跌破 50 軸後的方向訊號
-- **ATR 波動濾網**：市場波動不足時先不出手，避免低波動雜訊
-- **高週期結構確認（HTF）**：用更高時間框架確認大方向是否一致
-
-### 3. 執行層升級
-
-- **標的類型設定**：ETF / 台股個股 / 美股個股 / 商品
-- **建議倉位 (%)**
-- **建議停損 ATR**
-- **最大加碼次數**
-- Tooltips 顯示品質分數、濾網結果與建議倉位
-
-### 4. 統計面板升級
-
-右上 / 右下 Premium-style Dashboard 顯示：
-
-- 目前方向
-- 倉位狀態
-- 訊號品質
-- 訊號年齡
-- 訊號有效期
-- 風控建議
-- 濾網狀態
-- 固定 N 棒勝率 / 平均報酬
-- 翻轉平倉勝率 / 平均報酬
-- 最近 20 筆翻轉結果
-- 平均持有棒數
-
-### 5. Alert 條件
-
-已加入可建立 TradingView Alert 的條件：
-
-- 多頭翻轉
-- 空頭翻轉
-- 同向加碼
-- 原始事件遭濾網擋下
-- 訊號失效
+> **Mode A**：進場後固定持有 17 根 30 分鐘K棒出場（≈ 8.5 小時 ≈ 2 個台股交易日）  
+> **Mode B**：下一個方向翻轉訊號出現時平倉
 
 ---
 
-## 回測截圖（0050 · 1 小時線）
+## 實戰截圖
 
-![8zz 反指標回測 - 元大台灣50 1小時](assets/backtest-0050.jpg)
-
----
-
-## GitHub Pages 即時戰績看板
-
-**👉 [https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/](https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/)**
-
-一個純靜態看板，即時顯示所有反指標事件的方向、強度，以及對應 0050.TW 的勝敗結果。  
-**GitHub Actions 每天約觸發 11 次自動更新，頁面資料會隨之同步，書籤後無需再手動追蹤。**
-
-### 📊 看板功能
-
-| 功能 | 說明 |
-|------|------|
-| **勝率統計卡** | 總勝率、勝/敗/進行中筆數、平均報酬率 |
-| **方向分析圖** | 偏多 ▲ vs 偏空 ▼ 各自的勝敗柱狀圖 |
-| **強度別勝率** | ★☆☆ / ★★☆ / ★★★ 三個強度的勝率比較 |
-| **完整事件列表** | 所有事件（含進場日/出場日/報酬率），可按方向、強度、結果篩選 |
-
-### 啟用步驟（Repo Owner，一次設定）
-
-1. 至 GitHub Repo → **Settings → Pages**
-2. **Source** 選 `GitHub Actions`
-3. 儲存後等約 1 分鐘，頁面網址為：
-   ```
-   https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/
-   ```
-4. 之後每次 `Fetch FB Events & Update Pine Script` workflow 執行完畢後，`deploy-pages.yml` 會自動觸發部署，看板即時反映最新資料
-
-### 技術說明
-
-- `scripts/build_site_data.py` — 解析 `.pine` 檔案取出所有事件，使用 `yfinance` 抓取 0050.TW 歷史收盤價，計算每個翻轉訊號的報酬率與勝敗，寫入 `docs/events.json`
-- `docs/index.html` — 純靜態頁（無後端），讀取 `events.json` 後在瀏覽器端渲染，使用 Chart.js 繪製圖表
-- 每次 GitHub Actions 排程執行完畢後自動更新，**不需要額外伺服器**
+![即時戰績看板](assets/dashboard.jpg)
 
 ---
 
-## 自動更新 Pipeline
+## 如何加入 TradingView
 
-> 此功能讓指標的事件庫在臺股與美股開盤時段全自動抓取並更新，**一天僅觸發約 11 次**，GitHub Actions 免費額度完全足夠。
-
-### 架構圖
-
-```
-FB 公開貼文
-    ↓ (facebook-scraper)
-GitHub Actions 排程觸發
-    ↓ (scripts/fetch_fb_events.py)
-規則式情緒分類器
-    ↓ (scripts/update_pine_script.py)
-自動更新 8zz-indicator.pine → git push
-    ↓
-使用者取得最新版本（見下方三種方案）
-```
-
-### 排程規則
-
-| 時段 | Cron (UTC) | 對應台灣時間 | 次數 |
-|------|-----------|-------------|------|
-| 臺股開盤 09:00–13:30 | `0,30 1,2,3,4,5 * * 1-5` | 週一～五每 30 分鐘 | 9次/天 |
-| 美股開盤 09:30 EST | `30 14 * * 1-5` (標準時) / `30 13 * * 1-5` (夏令時) | 台灣時間 22:30 / 21:30 | 1次/天 |
-
-### 如何取得最新版本
-
-| 方案 | 說明 |
-|------|------|
-| **A（手動）** | 訂閱 GitHub Releases 通知，有新事件時去複製最新 `.pine` 貼入 TradingView |
-| **B（半自動）** | 從 [Raw URL](https://raw.githubusercontent.com/hansai-art/8zz-Contrarian-Indicator-TradingView/main/8zz-indicator.pine) 直接載入腳本，之後每次開圖自動讀最新版 |
-| **C（全自動 Pro）** | 後端爬到新事件後透過 TradingView Webhook Alert 直接推送訊號給訂閱者 |
-
-### 啟用步驟（Repo Owner）
-
-1. 至 GitHub Repo → **Settings → Secrets and variables → Actions** 新增：
-   - `FB_PAGE_ID`：追蹤的公開 FB 頁面 ID 或 username
-   - `FB_COOKIES`（選填）：若頁面需登入，填入 JSON 格式 cookie 字串
-2. 確認 `.github/workflows/fetch-fb-events.yml` 已合併到 `main` branch
-3. GitHub Actions 會依排程自動執行，有新事件時自動 commit & push
-
-### 情緒分類規則（`scripts/fetch_fb_events.py`）
-
-| 關鍵字（觸發即分類） | 方向 | 強度 |
-|----------------------|------|------|
-| 停損、認賠、虧損、畢業、爆倉 | 偏多 ▲ | ★★★ |
-| 被套、跌停、房貸、住套房 | 偏多 ▲ | ★★★ |
-| 賣出、停利、出場 | 偏多 ▲ | ★★☆ |
-| 觀望、等、修正、怕 | 偏多 ▲ | ★☆☆ |
-| 漲停買、漲停追、追漲 | 偏空 ▼ | ★★★ |
-| 買進、加碼、補倉、看多 | 偏空 ▼ | ★★☆ |
-| 持有、長期、慢慢漲 | 偏空 ▼ | ★☆☆ |
-
-> 規則採**首次命中**（first-match wins），可在 `scripts/fetch_fb_events.py` 的 `SENTIMENT_RULES` 列表中調整優先順序與關鍵字。
-
----
-
-## Community vs Paid 路線
-
-| 模組 | Community Edition | Pro （規劃） | Elite （規劃） |
-|------|-------------------|------------|---------------|
-| 基礎翻轉訊號 | ✅ | ✅ | ✅ |
-| 訊號品質分數 | ✅ | ✅ | ✅ |
-| 濾網（EMA/RSI/ATR/HTF） | ✅ | ✅ 進階版 | ✅ |
-| Premium Dashboard | ✅ 基礎版 | ✅ 完整版 | ✅ 完整版 |
-| Alert 條件 | ✅ | ✅ 進階告警組 | ✅ |
-| 完整事件庫 | ❌ | ✅ | ✅ |
-| 即時更新資料 | ❌ | ✅ | ✅ |
-| 多市場專屬權重 | ❌ | ✅ | ✅ |
-| 策略回測版 | ❌ | ✅ | ✅ |
-| 每週研究 / 社群解讀 | ❌ | ❌ | ✅ |
-| 教學與案例庫 | ❌ | ❌ | ✅ |
-
-
----
-
-## 目前指標邏輯
-
-```text
-1. 她買進 / 加碼 / 被套 / 看多  →  框架偏空 ▼
-2. 她停損 / 賣出 / 畢業 / 認賠  →  框架偏多 ▲
-3. 原始事件先進入品質評分
-4. 再由 EMA / RSI / ATR / HTF 濾網決定是否放行
-5. 放行後才更新有效訊號、加碼狀態與統計
-6. 訊號在設定的有效 K 棒內有效，超時則失效
-```
-
----
-
-## 參數設定
-
-### 顯示
-
-| 參數 | 預設 | 說明 |
-|------|------|------|
-| 箭頭距離 (ATR倍數) | `0.5` | 箭頭與 K 棒距離 |
-| 顯示加倉箭頭 | `開` | 同方向訊號顯示額外箭頭 |
-| 顯示背景色帶 | `開` | 有效訊號期間顯示偏多 / 偏空背景 |
-| 顯示資訊面板 | `開` | 顯示進階統計面板 |
-| 資訊面板位置 | `右下` | 可切換右上 |
-
-### 訊號治理
-
-| 參數 | 預設 | 說明 |
-|------|------|------|
-| 固定觀察K棒數 | `8` | 模式 A：固定 N 棒統計 |
-| 訊號有效K棒 | `24` | 超過後視為過期 |
-| 顯示被濾掉的原始訊號 | `關` | 可視化被阻擋的原始事件 |
-
-### 濾網
-
-| 參數 | 預設 | 說明 |
-|------|------|------|
-| EMA 趨勢濾網 | `開` | 使用趨勢方向過濾 |
-| RSI 動能濾網 | `關` | 使用 RSI 50 上下過濾 |
-| ATR 波動濾網 | `關` | 使用 ATR 波動率過濾 |
-| 高週期結構確認 | `關` | 使用更高週期方向確認 |
-| 確認週期 | `240` | 預設 4H |
-
-### 執行
-
-| 參數 | 預設 | 說明 |
-|------|------|------|
-| 標的類型 | `台股個股` | 影響分數偏移與停損建議 |
-| 基礎建議倉位 (%) | `20` | 用於品質分數換算建議倉位 |
-| 最大加碼次數 | `5` | 同方向最多加碼次數 |
-
-![參數設定面板](assets/002.jpg)
-
----
-
-## 框架升級
-
-- 把公開版重新包裝成 **Community Edition**
-- 把價值從「迷因」拉到 **情緒 + 結構 + 風控**
-- 把單點訊號升級成 **帶濾網、可告警、可解讀** 的工具
-- 把 Dashboard 往付費產品體驗靠近
-
----
-
-## 安裝方式
-
-### 方法一：直接從 TradingView 新增
-
-1. 在 TradingView 圖表頁開啟「指標」
-2. 將本專案腳本貼入 Pine Script 編輯器
-3. 儲存後加入圖表
-4. 建議優先使用分鐘 / 小時等較細週期，較能反映事件時間差
-
-### 方法二：手動貼上 Pine Script
-
-1. 開啟 [TradingView](https://www.tradingview.com) → Pine Script 編輯器
+1. 開啟 [TradingView](https://www.tradingview.com) → 圖表頁下方「Pine Script 編輯器」
 2. 複製 [`8zz-indicator.pine`](./8zz-indicator.pine) 的全部內容
-3. 貼入編輯器 → 儲存 → 加到圖表
+3. 貼入編輯器 → 儲存 → 點「加到圖表」
+4. 加到 **0050.TW、個股、或任何你想觀察的標的**皆可
+
+> 建議使用 **30 分鐘或 1 小時線**，與事件時間顆粒度最吻合。
 
 ---
 
-## 檔案結構
+## 訊號怎麼看？
 
-```text
-8zz-Contrarian-Indicator-TradingView/
-├── 8zz-indicator.pine             ← Pine Script 指標（自動更新）
-├── .github/
-│   └── workflows/
-│       ├── fetch-fb-events.yml   ← GitHub Actions 排程工作流程（抓取 FB 事件）
-│       └── deploy-pages.yml      ← GitHub Pages 自動部署（由 fetch-fb-events 觸發）
-├── scripts/
-│   ├── fetch_fb_events.py        ← FB 爬蟲 + 情緒分類器
-│   ├── update_pine_script.py     ← Pine Script 自動更新器
-│   ├── build_site_data.py        ← 戰績計算器（yfinance → events.json）
-│   └── requirements.txt          ← Python 依賴清單
-├── docs/                         ← GitHub Pages 根目錄
-│   ├── index.html                ← 即時戰績看板
-│   ├── events.json               ← 每次 Actions 自動生成的資料
-│   └── .nojekyll                 ← 停用 Jekyll 處理
-├── data/
-│   ├── last_event_timestamp.json ← 爬蟲狀態（避免重複插入）
-│   └── new_events.json           ← 每次執行的暫存事件（腳本間傳遞）
-├── assets/
-│   ├── backtest-0050.jpg
-│   ├── 001.jpg
-│   ├── 002.jpg
-│   └── 003.jpg
-└── README.md
-```
+圖表上每個事件會顯示：
+
+- **▲ 偏多**（綠色向上箭頭）：看漲偏多，可考慮買進或持有
+- **▼ 偏空**（紅色向下箭頭）：看跌偏空，可考慮減碼或觀望
+- **★☆☆ / ★★☆ / ★★★**：訊號強度，星星越多情緒越極端
+- **Tooltip**：懸停或點擊可見原始 FB 發文摘要
+
+方向翻轉（上一個訊號與這次不同）才是關鍵進場點，標記為**翻轉訊號（Flip）**並納入勝率統計。
+
+---
+
+## 參數調整
+
+| 分組 | 參數 | 預設 | 說明 |
+|------|------|------|------|
+| 顯示 | 箭頭距離 (ATR倍數) | 0.5 | 箭頭與K棒的距離 |
+| 顯示 | 顯示背景色帶 | 開 | 有效訊號期間顯示偏多/偏空底色 |
+| 訊號治理 | 固定觀察K棒數 | 17 | Mode A 固定出場K棒數（30 分鐘K棒，≈ 8.5 小時）|
+| 訊號治理 | 訊號有效K棒 | 24 | 超過後視為過期 |
+| 濾網 | EMA 趨勢濾網 | 關 | 開啟後只放行與趨勢同向的訊號 |
+| 濾網 | RSI 動能濾網 | 關 | 只放行站上/跌破 50 的訊號 |
+| 濾網 | ATR 波動濾網 | 關 | 低波動時不出手 |
+| 濾網 | 高週期結構確認 | 關 | 用更高週期確認大方向 |
+| 執行 | 標的類型 | 台股個股 | 影響訊號品質分數與停損建議 |
+| 執行 | 基礎建議倉位 (%) | 20 | 品質分數換算後的建議倉位 |
+
+---
+
+## 事件庫更新
+
+本指標的事件由人工審核後手動更新到 Pine Script 內。每次新增事件後，GitHub Actions 會自動重新計算戰績並更新看板。
+
+事件來源：巴尼尼公開 FB 貼文（情緒分類依照**情緒 > 動作**原則人工判斷）。
 
 ---
 
 ## 授權
 
-本專案採用 [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/) 授權。
+[Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/) — 可自由使用、修改、衍生，但衍生作品須保留原授權。
