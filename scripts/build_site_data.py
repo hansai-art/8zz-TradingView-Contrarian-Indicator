@@ -153,6 +153,7 @@ def compute_outcomes(events: list[dict], prices: dict[str, float]) -> list[dict]
         entry_date, entry_price = nearest_close(prices, entry_dt)
 
         if entry_date is None or entry_price is None:
+            flip["entry_date"] = None
             flip["entry_price"] = None
             flip["exit_price"] = None
             flip["exit_date"] = None
