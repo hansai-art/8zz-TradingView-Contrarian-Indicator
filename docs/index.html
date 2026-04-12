@@ -130,6 +130,51 @@
       padding: 16px;
     }
     .chart-card h3 { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+    .chart-card canvas { height: 280px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .container { padding: 12px 10px; }
+      header h1 { font-size: 18px; }
+      header .subtitle { font-size: 11px; }
+
+      /* 3 cards per row on mobile */
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .stat-card { padding: 10px 4px; }
+      .stat-card .val { font-size: 20px; }
+      .stat-card .lbl { font-size: 10px; }
+
+      /* Taller chart on mobile */
+      .chart-card canvas { height: 220px; }
+      .chart-card h3 { font-size: 12px; }
+
+      /* Filter bar: 2-column grid */
+      .filter-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        align-items: center;
+      }
+      .filter-bar label { font-size: 11px; margin: 0; }
+      .filter-bar select, .filter-bar input[type=text] {
+        font-size: 12px;
+        padding: 4px 6px;
+        width: 100%;
+      }
+      #row-count { grid-column: 1 / -1; margin-left: 0; }
+
+      /* Table: smaller font, hide 說明 column */
+      table { font-size: 12px; }
+      thead th, tbody td { padding: 7px 6px; white-space: nowrap; }
+      .hide-mobile { display: none !important; }
+      .tooltip-cell { display: none !important; }
+
+      /* Mode tabs: full width on mobile */
+      .mode-tab { padding: 6px 12px; font-size: 12px; }
+    }
 
     /* ── Filter bar ── */
     .filter-bar {
@@ -339,7 +384,7 @@
             <th>方向</th>
             <th>強度</th>
             <th>標的</th>
-            <th>說明</th>
+            <th class="hide-mobile">說明</th>
             <th>翻轉</th>
             <th>進場日</th>
             <th class="col-mode-b">出場日(B)</th>
@@ -509,6 +554,7 @@
             },
           },
         },
+        maintainAspectRatio: false,
         scales: {
           x: {
             type: 'time',
