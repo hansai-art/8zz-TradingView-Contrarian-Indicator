@@ -279,13 +279,13 @@
     <!-- Hold-bars sensitivity table -->
     <div id="sensitivity-wrap" style="margin-bottom:28px;display:none">
       <div style="color:var(--muted);font-size:12px;margin-bottom:8px;">
-        Mode A 勝率 vs 持有天數（點選切換 Mode A 可見）
+        Mode A 最佳參數（30 分鐘K棒）
       </div>
       <div style="overflow-x:auto;">
         <table id="sens-table" style="font-size:12px;min-width:520px;">
           <thead>
             <tr>
-              <th>持有天數</th><th>勝率</th><th>平均報酬</th><th>勝</th><th>敗</th><th>已結算</th>
+              <th>持有K棒數</th><th>勝率</th><th>平均報酬</th><th>勝</th><th>敗</th><th>已結算</th>
             </tr>
           </thead>
           <tbody id="sens-tbody"></tbody>
@@ -555,20 +555,18 @@
     // Best = highest avg_pnl_pct among rows with positive avg return; fall back to least-negative if all negative
     const positive = sens.filter(r => r.avg_pnl_pct > 0);
     const best = (positive.length > 0 ? positive : sens).reduce((a, b) => b.avg_pnl_pct > a.avg_pnl_pct ? b : a);
-    sens.forEach(row => {
-      const isBest = row.hold_bars === best.hold_bars;
-      const isDefault = row.hold_bars === holdBars;
+    // Only show the currently active hold_bars row
+    const row = sens.find(r => r.hold_bars === holdBars);
+    if (row) {
       const pnlColor = row.avg_pnl_pct >= 0 ? 'var(--green)' : 'var(--red)';
       const wrColor  = row.win_rate >= 60 ? 'var(--green)' : row.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
-      tbody.innerHTML += `<tr style="${isBest ? 'background:#1a2a1a' : ''}">
-        <td style="font-weight:${isDefault?'700':'400'};color:${isDefault?'var(--blue)':''}">
-          ${row.hold_bars}${isDefault?' ★':''}${isBest && !isDefault?' 🏆':''}
-        </td>
+      tbody.innerHTML = `<tr style="background:#1a2a1a">
+        <td style="font-weight:700;color:var(--blue)">${row.hold_bars} ★</td>
         <td style="color:${wrColor}">${row.win_rate}%</td>
         <td style="color:${pnlColor}">${row.avg_pnl_pct >= 0 ? '+' : ''}${row.avg_pnl_pct.toFixed(2)}%</td>
         <td>${row.wins}</td><td>${row.losses}</td><td>${row.resolved}</td>
       </tr>`;
-    });
+    }
   }
 
   initEquityChart();
@@ -576,7 +574,7 @@
   // Apply initial Mode A visual state (columns, sensitivity table, chart highlight)
   updateEquityChart('a');
   $('sensitivity-wrap').style.display = 'block';
-  $('mode-desc').innerHTML = `<strong>Mode A（固定 ${holdBars} 棒）</strong>：每筆翻轉訊號進場後，持滿 ${holdBars} 根交易日出場。報酬以各事件指定的標的計算。`;
+  $('mode-desc').innerHTML = `<strong>Mode A（固定 ${holdBars} 根 30 分鐘K棒）</strong>：每筆翻轉訊號進場後，持滿 ${holdBars} 根 30 分鐘K棒出場（≈ 8.5 小時）。報酬以各事件指定的標的計算。`;
 
   // ── Table rendering ─────────────────────────────────────────────────────────
   function outcomeBadge(o) {
