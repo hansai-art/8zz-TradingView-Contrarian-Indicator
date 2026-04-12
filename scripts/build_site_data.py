@@ -37,10 +37,11 @@ PINE_FILE = ROOT / "8zz-indicator.pine"
 OUTPUT_FILE = ROOT / "docs" / "events.json"
 
 FALLBACK_TICKER = "0050.TW"
-# Number of trading days for Mode A fixed-bar exit (19 = best avg return per sensitivity analysis)
-MODE_A_HOLD_BARS = 19
-# Range of hold_bars to test for sensitivity analysis
-SENSITIVITY_RANGE = range(7, 22)  # 7 to 21 inclusive
+# Number of K bars for Mode A fixed-bar exit (uses 30m bars when available, 1h next, daily fallback)
+# 17 × 30m bars ≈ 8.5 h ≈ 2 Taiwan trading sessions — highest win rate from sensitivity analysis
+MODE_A_HOLD_BARS = 17
+# Range of hold_bars to test for sensitivity analysis (starts at 14, removes low-performing rows)
+SENSITIVITY_RANGE = range(14, 51)  # 14 to 50 inclusive
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -291,7 +292,7 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
             flip["outcome"] = "open" if is_last else "unknown"
             continue
 
-        flip["entry_date"] = entry_key[:10]   # normalize to YYYY-MM-DD for display/indexing
+        flip["entry_date"] = entry_key   # keep full timestamp (e.g. "2026-04-09T01:00")
         flip["entry_price"] = round(entry_price, 2)
 
         if not is_last:
@@ -310,7 +311,7 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
             flip["outcome"] = "open" if is_open else "unknown"
             continue
 
-        flip["exit_date"] = exit_key[:10]   # normalize to YYYY-MM-DD
+        flip["exit_date"] = exit_key   # keep full timestamp
         flip["exit_price"] = round(exit_price, 2)
 
         price_change_pct = (exit_price - entry_price) / entry_price * 100
@@ -345,21 +346,30 @@ def compute_outcomes_mode_a(
 
     for flip in flips:
         prices = all_prices.get(flip["ticker"], {})
-        # Only daily keys for trading-day counting (avoids counting 30m/1h bars as days)
-        sorted_dates = sorted(d for d in prices.keys() if len(d) == 10)
 
-        # Resolve entry date (reuse Mode B result when available)
-        # entry_date is already normalized to YYYY-MM-DD by Mode B
-        entry_date = flip.get("entry_date")
+        # Resolve entry key (reuse Mode B result; entry_date is the full key, e.g. "2026-04-09T01:00")
+        entry_key = flip.get("entry_date")   # Mode B stores full timestamp here
         entry_price_val = flip.get("entry_price")
 
-        if entry_date is None:
+        if entry_key is None:
             entry_dt = datetime.fromisoformat(flip["time_utc"])
-            entry_key, ep = nearest_close(prices, entry_dt)
-            entry_date = entry_key[:10] if entry_key else None
-            entry_price_val = ep
+            entry_key, entry_price_val = nearest_close(prices, entry_dt)
 
-        if entry_date is None or entry_price_val is None or entry_date not in sorted_dates:
+        if entry_key is None or entry_price_val is None:
+            flip["exit_date_a"] = None
+            flip["exit_price_a"] = None
+            flip["pnl_pct_a"] = None
+            flip["outcome_a"] = "open"
+            continue
+
+        # Select sorted_bars matching the entry key's granularity:
+        #   16 chars = 30m  ("YYYY-MM-DDTHH:MM")
+        #   13 chars = 1h   ("YYYY-MM-DDTHH")
+        #   10 chars = daily ("YYYY-MM-DD")
+        key_len = len(entry_key)
+        sorted_bars = sorted(k for k in prices.keys() if len(k) == key_len)
+
+        if entry_key not in sorted_bars:
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
             flip["pnl_pct_a"] = None
@@ -368,7 +378,7 @@ def compute_outcomes_mode_a(
 
         entry_price_val = float(entry_price_val)
         try:
-            entry_idx = sorted_dates.index(entry_date)
+            entry_idx = sorted_bars.index(entry_key)
         except ValueError:
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
@@ -377,18 +387,18 @@ def compute_outcomes_mode_a(
             continue
 
         exit_idx = entry_idx + hold_bars
-        if exit_idx >= len(sorted_dates):
-            # Not enough trading days yet → position still open
+        if exit_idx >= len(sorted_bars):
+            # Not enough K bars yet → position still open
             flip["exit_date_a"] = None
             flip["exit_price_a"] = None
             flip["pnl_pct_a"] = None
             flip["outcome_a"] = "open"
             continue
 
-        exit_date_a = sorted_dates[exit_idx]
-        exit_price_a = prices[exit_date_a]
+        exit_bar_a = sorted_bars[exit_idx]
+        exit_price_a = prices[exit_bar_a]
 
-        flip["exit_date_a"] = exit_date_a
+        flip["exit_date_a"] = exit_bar_a   # full timestamp (30m/1h/daily matches entry granularity)
         flip["exit_price_a"] = round(exit_price_a, 2)
 
         price_change_pct = (exit_price_a - entry_price_val) / entry_price_val * 100
@@ -504,6 +514,8 @@ def build_equity_curves(
     first_entry: str | None = next(
         (f["entry_date"] for f in flips if f.get("entry_date")), None
     )
+    # Normalize for benchmark comparison (YYYY-MM-DD)
+    first_entry_date = first_entry[:10] if first_entry else None
 
     # ── Mode B ────────────────────────────────────────────────────────
     curve_b: list[dict] = []
@@ -526,7 +538,7 @@ def build_equity_curves(
     equity_a = 100.0
     if first_entry:
         curve_a.append({"date": first_entry, "value": round(equity_a, 2)})
-    # Sort by exit date so compounding is in chronological order
+    # Sort by exit timestamp so compounding is in chronological order
     mode_a_resolved = sorted(
         [f for f in flips if f.get("outcome_a") in ("win", "loss", "flat")
          and f.get("pnl_pct_a") is not None and f.get("exit_date_a")],
@@ -534,18 +546,16 @@ def build_equity_curves(
     )
     for flip in mode_a_resolved:
         equity_a *= 1 + flip["pnl_pct_a"] / 100
-        # exit_date_a is always a daily key (YYYY-MM-DD)
         curve_a.append({"date": flip["exit_date_a"], "value": round(equity_a, 2)})
 
     # ── 0050 benchmark ────────────────────────────────────────────────
     curve_0050: list[dict] = []
     bench_prices = all_prices.get(FALLBACK_TICKER, {})
-    # first_entry is already YYYY-MM-DD (normalized in Mode B)
-    start_date = first_entry
+    start_date = first_entry_date   # YYYY-MM-DD for daily benchmark comparison
     if start_date and bench_prices:
         sorted_dates = sorted(d for d in bench_prices.keys() if len(d) == 10)
         start_idx = next(
-            (i for i, d in enumerate(sorted_dates) if d >= start_date), None
+            (i for i, d in enumerate(sorted_dates) if d >= start_date[:10]), None
         )
         if start_idx is not None:
             base = bench_prices[sorted_dates[start_idx]]
