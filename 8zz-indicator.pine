@@ -34,6 +34,7 @@ grp4 = "執行"
 assetProfile = input.string("台股個股", "標的類型", options=["ETF", "台股個股", "美股個股", "商品"], group=grp4)
 baseRiskPct = input.float(20.0, "基礎建議倉位 (%)", minval=5.0, maxval=100.0, step=5.0, group=grp4)
 maxPyramid = input.int(5, "最大加碼次數", minval=1, maxval=5, group=grp4)
+sellBatchPct = input.float(20.0, "每次賣出比例 (%)", minval=5.0, maxval=100.0, step=5.0, group=grp4, tooltip="每個賣出訊號建議賣出的倉位比例，預設每次賣 20%")
 
 float gap = ta.atr(14) * offset_atr
 emaBasis = ta.ema(close, emaLen)
@@ -414,7 +415,7 @@ if array.size(evt_time) > 0
             score = clampFloat(baseScore + filterScore, 0, 100)
             scoreText = "品質分數: " + str.tostring(score, "#.0") + " (" + qualityLabel(score) + ")"
             filterStatusText = "濾網: " + filterText
-            positionText = d == 1 ? "建議買入: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "% (依強度)" : "建議賣出: 20% / 次"
+            positionText = d == 1 ? "建議買入: " + str.tostring(baseRiskPct * positionFactor(score), "#.0") + "% (依強度)" : "建議賣出: " + str.tostring(sellBatchPct, "#.0") + "% / 次"
             richTip = tip + "\n" + scoreText + "\n" + filterStatusText + "\n" + positionText
 
             lastFilterText := filterText
@@ -505,7 +506,7 @@ activeRsiOk = effectiveDir == 1 ? rsiLongOk : effectiveDir == -1 ? rsiShortOk : 
 activeHtfOk = effectiveDir == 1 ? htfLongOk : effectiveDir == -1 ? htfShortOk : true
 riskPct = effectiveDir == 0 or na(agedScore) ? 0.0 : baseRiskPct * positionFactor(agedScore)
 stopAtr = profileStopAtr(assetProfile)
-riskText = effectiveDir == 0 ? "等待下一筆翻轉" : effectiveDir == 1 ? str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批買入" : "每次賣 20% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 逐批出場"
+riskText = effectiveDir == 0 ? "等待下一筆翻轉" : effectiveDir == 1 ? str.tostring(riskPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 分批買入" : "每次賣 " + str.tostring(sellBatchPct, "#.0") + "% / 停損 " + str.tostring(stopAtr, "#.1") + " ATR / 逐批出場"
 qualityText = not na(agedScore) ? str.tostring(agedScore, "#.0") + " / 100 (" + qualityLabel(agedScore) + ")" : "尚無"
 float ageHours = lastEvtTime > 0 ? (timenow - lastEvtTime) / 3600000.0 : na
 ageText = formatSignalAge(lastEvtTime, isSignalExpired, ageHours)
