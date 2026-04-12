@@ -382,7 +382,7 @@ remainingBars = not na(barsSinceSignal) ? math.max(signalLifeBars - barsSinceSig
 agedScore = not na(lastSignalScore) and not na(barsSinceSignal) ? clampFloat(lastSignalScore - barsSinceSignal * 25.0 / signalLifeBars, 0, 100) : na
 isSignalExpired = currentDir != 0 and not na(remainingBars) and remainingBars <= 0
 effectiveDir = isSignalExpired ? 0 : currentDir
-expiredNow = isSignalExpired and (na(isSignalExpired[1]) or not isSignalExpired[1])
+expiredNow = isSignalExpired and (bar_index == 0 or not isSignalExpired[1])
 
 bool flipSignalNow = false
 bool addSignalNow = false
