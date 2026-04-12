@@ -58,14 +58,18 @@ jobs:
       - name: Update Pine Script with new events
         run: python scripts/update_pine_script.py
 
-      # ── 5. Commit & push (only when the .pine file actually changed) ─────────
+      # ── 5. Build GitHub Pages site data ─────────────────────────────────────
+      - name: Build site data (docs/events.json)
+        run: python scripts/build_site_data.py
+
+      # ── 6. Commit & push (only when the .pine file actually changed) ─────────
       - name: Commit and push changes
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Stage every file the scripts may have touched
-          git add 8zz-indicator.pine data/last_event_timestamp.json data/new_events.json
+          git add 8zz-indicator.pine data/last_event_timestamp.json data/new_events.json docs/events.json
 
           # Only commit when there is a real diff
           if git diff --cached --quiet; then

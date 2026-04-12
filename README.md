@@ -80,6 +80,38 @@
 
 ---
 
+## GitHub Pages 即時戰績看板
+
+> 部署一個靜態網頁，即時顯示所有反指標事件的方向、強度，以及對應 0050.TW 的勝敗結果。
+
+### 📊 看板功能
+
+| 功能 | 說明 |
+|------|------|
+| **勝率統計卡** | 總勝率、勝/敗/進行中筆數、平均報酬率 |
+| **方向分析圖** | 偏多 ▲ vs 偏空 ▼ 各自的勝敗柱狀圖 |
+| **強度別勝率** | ★☆☆ / ★★☆ / ★★★ 三個強度的勝率比較 |
+| **完整事件列表** | 所有事件（含進場日/出場日/報酬率），可按方向、強度、結果篩選 |
+
+### 啟用步驟（Repo Owner，一次設定）
+
+1. 至 GitHub Repo → **Settings → Pages**
+2. **Source** 選 `Deploy from a branch`
+3. **Branch** 選 `main`，**Folder** 選 `/docs`
+4. 儲存後等約 1 分鐘，頁面網址為：
+   ```
+   https://hansai-art.github.io/8zz-Contrarian-Indicator-TradingView/
+   ```
+5. 每次 GitHub Actions 執行時，`docs/events.json` 會自動更新，看板即時反映最新資料
+
+### 技術說明
+
+- `scripts/build_site_data.py` — 解析 `.pine` 檔案取出所有事件，使用 `yfinance` 抓取 0050.TW 歷史收盤價，計算每個翻轉訊號的報酬率與勝敗，寫入 `docs/events.json`
+- `docs/index.html` — 純靜態頁（無後端），讀取 `events.json` 後在瀏覽器端渲染，使用 Chart.js 繪製圖表
+- 每次 GitHub Actions 排程執行完畢後自動更新，**不需要額外伺服器**
+
+---
+
 ## 自動更新 Pipeline
 
 > 此功能讓指標的事件庫在臺股與美股開盤時段全自動抓取並更新，**一天僅觸發約 11 次**，GitHub Actions 免費額度完全足夠。
@@ -248,7 +280,12 @@ GitHub Actions 排程觸發
 ├── scripts/
 │   ├── fetch_fb_events.py        ← FB 爬蟲 + 情緒分類器
 │   ├── update_pine_script.py     ← Pine Script 自動更新器
+│   ├── build_site_data.py        ← 戰績計算器（yfinance → events.json）
 │   └── requirements.txt          ← Python 依賴清單
+├── docs/                         ← GitHub Pages 根目錄
+│   ├── index.html                ← 即時戰績看板
+│   ├── events.json               ← 每次 Actions 自動生成的資料
+│   └── .nojekyll                 ← 停用 Jekyll 處理
 ├── data/
 │   ├── last_event_timestamp.json ← 爬蟲狀態（避免重複插入）
 │   └── new_events.json           ← 每次執行的暫存事件（腳本間傳遞）

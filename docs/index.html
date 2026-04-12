@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8zz 反指標 — 即時戰績看板</title>
+
+  <!-- Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0e1117;
+      --card:      #161b22;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --green:     #00e676;
+      --red:       #ff1744;
+      --yellow:    #ffeb3b;
+      --blue:      #58a6ff;
+      --orange:    #ff7043;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    header h1 { font-size: 22px; font-weight: 700; }
+    header .subtitle { color: var(--muted); font-size: 13px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--border);
+    }
+    .badge-green  { background: #1a3a2a; color: var(--green); border: 1px solid var(--green); }
+    .badge-red    { background: #3a1a1a; color: var(--red);   border: 1px solid var(--red); }
+    .badge-yellow { background: #3a3400; color: var(--yellow);border: 1px solid var(--yellow); }
+    .badge-blue   { background: #1a2a3a; color: var(--blue);  border: 1px solid var(--blue); }
+    .badge-muted  { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-card .val {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-card .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    /* ── Charts row ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .chart-card h3 { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .filter-bar label { color: var(--muted); font-size: 12px; }
+    .filter-bar select, .filter-bar input[type=text] {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+    .filter-bar select:focus, .filter-bar input:focus {
+      border-color: var(--blue);
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: #1c2128; }
+    tbody td {
+      padding: 9px 12px;
+      vertical-align: middle;
+    }
+    .dir-bull { color: var(--green); font-weight: 700; }
+    .dir-bear { color: var(--red);   font-weight: 700; }
+    .pnl-pos  { color: var(--green); }
+    .pnl-neg  { color: var(--red); }
+    .tooltip-cell {
+      max-width: 280px;
+      white-space: pre-line;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* ── Loading / Error ── */
+    #loading { text-align: center; padding: 60px; color: var(--muted); }
+    #error   { text-align: center; padding: 40px; color: var(--red); display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1>8zz 反指標 — 即時戰績看板</h1>
+      <div class="subtitle">
+        社群情緒反轉框架｜參考指數：0050.TW（元大台灣50）
+        &nbsp;·&nbsp;
+        <a href="https://github.com/hansai-art/8zz-Contrarian-Indicator-TradingView" target="_blank">GitHub ↗</a>
+      </div>
+    </div>
+    <div id="generated-at" style="margin-left:auto; color:var(--muted); font-size:12px;"></div>
+  </header>
+
+  <div id="loading">⏳ 載入資料中…</div>
+  <div id="error">❌ 無法載入 events.json，請稍後再試。</div>
+
+  <div id="main-content" style="display:none">
+
+    <!-- Stats cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="val" id="s-winrate" style="color:var(--green)">—</div>
+        <div class="lbl">勝率（翻轉訊號）</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="s-wins" style="color:var(--green)">—</div>
+        <div class="lbl">勝</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="s-losses" style="color:var(--red)">—</div>
+        <div class="lbl">敗</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="s-open" style="color:var(--yellow)">—</div>
+        <div class="lbl">進行中</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="s-avgpnl">—</div>
+        <div class="lbl">平均報酬率</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="s-total" style="color:var(--muted)">—</div>
+        <div class="lbl">總事件數</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>翻轉訊號方向分析</h3>
+        <canvas id="dirChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>強度別勝率 (★☆☆ / ★★☆ / ★★★)</h3>
+        <canvas id="strChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <label>方向</label>
+      <select id="f-dir">
+        <option value="all">全部</option>
+        <option value="1">偏多 ▲</option>
+        <option value="-1">偏空 ▼</option>
+      </select>
+
+      <label>強度</label>
+      <select id="f-str">
+        <option value="all">全部</option>
+        <option value="1">★☆☆</option>
+        <option value="2">★★☆</option>
+        <option value="3">★★★</option>
+      </select>
+
+      <label>結果</label>
+      <select id="f-outcome">
+        <option value="all">全部</option>
+        <option value="win">勝</option>
+        <option value="loss">敗</option>
+        <option value="open">進行中</option>
+      </select>
+
+      <label>僅翻轉訊號</label>
+      <select id="f-flip">
+        <option value="flip">僅翻轉</option>
+        <option value="all">所有事件</option>
+      </select>
+
+      <input type="text" id="f-search" placeholder="關鍵字搜尋…" style="min-width:160px" />
+
+      <span id="row-count" style="color:var(--muted);font-size:12px;margin-left:auto"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table id="evt-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>日期</th>
+            <th>方向</th>
+            <th>強度</th>
+            <th>說明</th>
+            <th>翻轉</th>
+            <th>進場日</th>
+            <th>出場日</th>
+            <th>報酬率</th>
+            <th>結果</th>
+          </tr>
+        </thead>
+        <tbody id="evt-tbody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /main-content -->
+
+  <footer>
+    免責聲明：本頁面僅供學術研究與娛樂用途，不構成任何投資建議。
+    勝率以 0050.TW（元大台灣50）作為參考指數計算，不代表個股操作結果。
+  </footer>
+</div><!-- /container -->
+
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let allEvents = [];
+  let stats = {};
+
+  // ── Fetch data ──────────────────────────────────────────────────────────────
+  try {
+    const res = await fetch('events.json');
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    stats    = data.stats;
+    allEvents = data.events;
+  } catch (e) {
+    $('loading').style.display = 'none';
+    $('error').style.display   = 'block';
+    $('error').textContent = '❌ 無法載入 events.json：' + e.message;
+    return;
+  }
+
+  $('loading').style.display      = 'none';
+  $('main-content').style.display = 'block';
+
+  // ── Stats cards ─────────────────────────────────────────────────────────────
+  const winRateColor = stats.win_rate >= 60 ? 'var(--green)' : stats.win_rate >= 40 ? 'var(--yellow)' : 'var(--red)';
+  $('s-winrate').textContent  = stats.win_rate + '%';
+  $('s-winrate').style.color  = winRateColor;
+  $('s-wins').textContent     = stats.wins;
+  $('s-losses').textContent   = stats.losses;
+  $('s-open').textContent     = stats.open_flips;
+  const avg = stats.avg_pnl_pct;
+  $('s-avgpnl').textContent   = (avg >= 0 ? '+' : '') + avg + '%';
+  $('s-avgpnl').style.color   = avg >= 0 ? 'var(--green)' : 'var(--red)';
+  $('s-total').textContent    = stats.total_events;
+
+  const gen = new Date(stats.generated_at);
+  $('generated-at').textContent = '更新時間：' + gen.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+
+  // ── Direction chart ─────────────────────────────────────────────────────────
+  new Chart($('dirChart'), {
+    type: 'bar',
+    data: {
+      labels: ['偏多 ▲', '偏空 ▼'],
+      datasets: [
+        {
+          label: '勝',
+          data: [stats.bullish_wins, stats.bearish_wins],
+          backgroundColor: 'rgba(0,230,118,0.7)',
+        },
+        {
+          label: '敗',
+          data: [
+            stats.bullish_flips - stats.bullish_wins,
+            stats.bearish_flips - stats.bearish_wins,
+          ],
+          backgroundColor: 'rgba(255,23,68,0.7)',
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+        y: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+      },
+    },
+  });
+
+  // ── Strength chart ──────────────────────────────────────────────────────────
+  const byStr = stats.by_strength;
+  new Chart($('strChart'), {
+    type: 'bar',
+    data: {
+      labels: ['★☆☆ (弱)', '★★☆ (中)', '★★★ (強)'],
+      datasets: [
+        {
+          label: '勝率 %',
+          data: [byStr['1'].win_rate, byStr['2'].win_rate, byStr['3'].win_rate],
+          backgroundColor: ['rgba(88,166,255,0.6)', 'rgba(88,166,255,0.75)', 'rgba(88,166,255,0.9)'],
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#8b949e', callback: v => v + '%' },
+          grid: { color: '#30363d' },
+        },
+      },
+    },
+  });
+
+  // ── Table rendering ─────────────────────────────────────────────────────────
+  function outcomeBadge(o) {
+    if (o === 'win')     return '<span class="badge badge-green">勝</span>';
+    if (o === 'loss')    return '<span class="badge badge-red">敗</span>';
+    if (o === 'open')    return '<span class="badge badge-yellow">進行中</span>';
+    if (o === 'flat')    return '<span class="badge badge-muted">持平</span>';
+    return '<span class="badge badge-muted">—</span>';
+  }
+
+  function pnlCell(pnl) {
+    if (pnl == null) return '<td>—</td>';
+    const cls = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+    return `<td class="${cls}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</td>`;
+  }
+
+  function renderTable(filtered) {
+    const tbody = $('evt-tbody');
+    tbody.innerHTML = '';
+    filtered.forEach((e, idx) => {
+      const dirClass = e.direction === 1 ? 'dir-bull' : 'dir-bear';
+      const flipMark = e.is_flip ? '🔄' : '';
+      const tip = (e.tooltip || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      tbody.innerHTML += `
+        <tr>
+          <td style="color:var(--muted)">${idx + 1}</td>
+          <td style="white-space:nowrap">${e.date}</td>
+          <td class="${dirClass}">${e.dir_label}</td>
+          <td>${e.strength_label}</td>
+          <td class="tooltip-cell">${tip}</td>
+          <td style="text-align:center">${flipMark}</td>
+          <td style="white-space:nowrap">${e.entry_date || '—'}</td>
+          <td style="white-space:nowrap">${e.exit_date  || '—'}</td>
+          ${pnlCell(e.pnl_pct)}
+          <td>${e.is_flip ? outcomeBadge(e.outcome) : '—'}</td>
+        </tr>`;
+    });
+    $('row-count').textContent = `顯示 ${filtered.length} / ${allEvents.length} 筆`;
+  }
+
+  function applyFilters() {
+    const dir     = $('f-dir').value;
+    const str     = $('f-str').value;
+    const outcome = $('f-outcome').value;
+    const flipOnly = $('f-flip').value === 'flip';
+    const search  = $('f-search').value.toLowerCase();
+
+    const filtered = allEvents.filter(e => {
+      if (flipOnly && !e.is_flip) return false;
+      if (dir !== 'all' && String(e.direction) !== dir) return false;
+      if (str !== 'all' && String(e.strength) !== str) return false;
+      if (outcome !== 'all') {
+        if (!e.is_flip) return false;
+        if (e.outcome !== outcome) return false;
+      }
+      if (search && !(e.tooltip || '').toLowerCase().includes(search)) return false;
+      return true;
+    });
+    renderTable(filtered);
+  }
+
+  ['f-dir','f-str','f-outcome','f-flip'].forEach(id => $(id).addEventListener('change', applyFilters));
+  $('f-search').addEventListener('input', applyFilters);
+
+  applyFilters();
+})();
+</script>
+</body>
+</html>
