@@ -175,15 +175,30 @@ def fetch_price_history(ticker: str, start: datetime, end: datetime) -> dict[str
             progress=False,
         )
         if df is not None and not df.empty:
+            # Group bars by day; filter out intra-day outliers before storing.
+            # yfinance often returns a corrupt "last bar of day" for non-US exchanges
+            # (e.g. Taiwan market closes at 13:30 CST, so the 13:00–14:00 bar is
+            # truncated and sometimes contains a wildly wrong close price).
+            # Strategy: if a bar deviates >7% from the day's median close, skip it.
+            from statistics import median as _median
+            day_bars: dict[str, list[tuple]] = {}
             for idx, row in df.iterrows():
                 dt_utc = _to_utc(idx)
                 close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
-                h_key = dt_utc.strftime("%Y-%m-%dT%H")
                 d_key = dt_utc.strftime("%Y-%m-%d")
-                if h_key not in prices:          # don't overwrite 30m data
-                    prices[h_key] = close
-                if d_key not in prices:
-                    prices[d_key] = close
+                day_bars.setdefault(d_key, []).append((dt_utc, close))
+
+            for d_key, bars in day_bars.items():
+                closes = [c for _, c in bars]
+                med = _median(closes)
+                for dt_utc, close in sorted(bars, key=lambda x: x[0]):
+                    if len(bars) >= 3 and abs(close - med) / med > 0.07:
+                        continue  # skip intra-day outlier (corrupt truncated bar)
+                    h_key = dt_utc.strftime("%Y-%m-%dT%H")
+                    if h_key not in prices:          # don't overwrite 30m data
+                        prices[h_key] = close
+                    if d_key not in prices:
+                        prices[d_key] = close
     except Exception as exc:  # noqa: BLE001
         print(f"WARNING: yfinance 1h error for {ticker}: {exc}")
 
