@@ -43,7 +43,7 @@ OUTPUT_FILE = ROOT / "data" / "new_events.json"
 # ── Configuration ─────────────────────────────────────────────────────────────
 FB_PAGE_ID: str        = os.environ.get("FB_PAGE_ID", "")
 FB_COOKIES: str        = os.environ.get("FB_COOKIES", "")
-ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
+GOOGLE_API_KEY: str = os.environ.get("GOOGLE_API_KEY", "")
 MAX_POSTS_PER_RUN: int = 10
 
 # ── Claude AI classification ──────────────────────────────────────────────────
@@ -84,30 +84,37 @@ _EXAMPLES = [
 ]
 
 
-def classify_with_claude(text: str) -> dict | None:
+def classify_with_ai(text: str) -> dict | None:
     """
-    Call Claude Haiku to classify a post.
+    Call Google Gemini Flash to classify a post.
     Returns dict(direction, strength, action, ticker, reasoning), or None on failure.
     """
-    if not ANTHROPIC_API_KEY:
+    if not GOOGLE_API_KEY:
         return None
 
     try:
-        import anthropic
+        import google.generativeai as genai
     except ImportError:
-        print("WARNING: anthropic package not installed. Falling back to keyword rules.")
+        print("WARNING: google-generativeai not installed. Falling back to keyword rules.")
         return None
 
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=200,
-            system=_SYSTEM,
-            messages=_EXAMPLES + [{"role": "user", "content": text}],
+        genai.configure(api_key=GOOGLE_API_KEY)
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash-lite",
+            system_instruction=_SYSTEM,
         )
-        raw = response.content[0].text.strip()
-        # Strip potential markdown fences
+
+        # Build few-shot prompt as a single string
+        few_shot = ""
+        for i in range(0, len(_EXAMPLES), 2):
+            u = _EXAMPLES[i]["content"]
+            a = _EXAMPLES[i + 1]["content"]
+            few_shot += f"貼文：{u}\n回答：{a}\n\n"
+        prompt = few_shot + f"貼文：{text}\n回答："
+
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
         raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.DOTALL).strip()
         result = json.loads(raw)
 
@@ -119,7 +126,7 @@ def classify_with_claude(text: str) -> dict | None:
             "reasoning": str(result.get("reasoning", "")).strip(),
         }
     except Exception as exc:
-        print(f"WARNING: Claude API error ({type(exc).__name__}: {exc}). Falling back to keyword rules.")
+        print(f"WARNING: Gemini API error ({type(exc).__name__}: {exc}). Falling back to keyword rules.")
         return None
 
 
@@ -232,8 +239,8 @@ def fetch_posts() -> list[dict]:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    using_claude = bool(ANTHROPIC_API_KEY)
-    print(f"ℹ️  Classifier: {'Claude Haiku (AI)' if using_claude else 'keyword rules (set ANTHROPIC_API_KEY to enable AI)'}")
+    using_ai = bool(GOOGLE_API_KEY)
+    print(f"ℹ️  Classifier: {'Gemini Flash (AI)' if using_ai else 'keyword rules (set GOOGLE_API_KEY to enable AI)'}")
 
     last_unix_ms = load_state()
     raw_posts = fetch_posts()
@@ -256,16 +263,16 @@ def main() -> None:
         if not text:
             continue
 
-        # ── Try Claude first ──────────────────────────────────────────────────
+        # ── Try Gemini first ──────────────────────────────────────────────────
         direction, strength, action, ticker = 0, 1, "", ""
-        claude = classify_with_claude(text)
+        ai = classify_with_ai(text)
 
-        if claude is not None:
-            direction = claude["direction"]
-            strength  = claude["strength"]
-            action    = claude["action"]
-            ticker    = claude["ticker"]
-            print(f"  [Claude] dir={direction} str={strength} action='{action}' ticker='{ticker or '(0050 fallback)'}'")
+        if ai is not None:
+            direction = ai["direction"]
+            strength  = ai["strength"]
+            action    = ai["action"]
+            ticker    = ai["ticker"]
+            print(f"  [Gemini] dir={direction} str={strength} action='{action}' ticker='{ticker or '(0050 fallback)'}'")
         else:
             # ── Keyword fallback ──────────────────────────────────────────────
             kw = classify_with_keywords(text)
