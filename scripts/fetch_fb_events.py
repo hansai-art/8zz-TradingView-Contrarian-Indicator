@@ -143,6 +143,14 @@ _SYSTEM = """你是「8zz 反指標」系統的情緒分析器，專門分析台
 就算他「賣出」，但情緒是得意/歡呼/獲利了結 → direction: -1（偏空▼）
 關鍵是發文者當下的心理狀態，不是他做了什麼動作。
 
+【必須跳過的貼文 → direction: 0】
+以下類型與投資決策無關，一律輸出 direction: 0：
+- 抱怨「被人當工具」、「被複製」、「被跟單」等關於個人聲譽的牢騷
+- 宣告直播、錄影、開會、上課等活動通知
+- 聊天氣、運動、飲食、旅遊等生活日常
+- 轉貼新聞、評論時事，但沒有明確提到自己的持倉或交易動作
+- 情緒模糊、無法判斷是否與投資有關的貼文
+
 direction:
   1  = 偏多 ▲（恐慌/痛苦/被套 → 市場可能近底部）
  -1  = 偏空 ▼（亢奮/追漲/自大 → 市場可能近頂部）
@@ -169,6 +177,10 @@ _EXAMPLES = [
     {"role": "assistant", "content": '{"direction": -1, "strength": 2, "action": "加碼", "ticker": "TSM", "reasoning": "主動加碼且語氣自信看好，屬於偏空訊號"}'},
     {"role": "user",      "content": "今天天氣真好，出去走走"},
     {"role": "assistant", "content": '{"direction": 0, "strength": 1, "action": "", "ticker": "", "reasoning": "與投資無關的生活貼文"}'},
+    {"role": "user",      "content": "我已經變成工具了嗎？大家都在跟單，好無奈"},
+    {"role": "assistant", "content": '{"direction": 0, "strength": 1, "action": "", "ticker": "", "reasoning": "抱怨被人跟單當工具，無具體投資動作，跳過"}'},
+    {"role": "user",      "content": "yeah~ 來錄影了，如果大家都把我寫成工具…"},
+    {"role": "assistant", "content": '{"direction": 0, "strength": 1, "action": "", "ticker": "", "reasoning": "活動通知兼抱怨被跟單，非投資貼文，跳過"}'},
 ]
 
 
