@@ -31,9 +31,9 @@ from pathlib import Path
 
 try:
     from facebook_scraper import get_posts
+    _FB_SCRAPER_AVAILABLE = True
 except ImportError:
-    print("ERROR: facebook-scraper not installed. Run: pip install facebook-scraper")
-    sys.exit(1)
+    _FB_SCRAPER_AVAILABLE = False
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
@@ -209,6 +209,10 @@ def save_state(last_unix_ms: int) -> None:
 
 def fetch_posts() -> list[dict]:
     """Fetch recent posts from the FB page using facebook-scraper."""
+    if not _FB_SCRAPER_AVAILABLE:
+        print("WARNING: facebook-scraper unavailable (Python 3.12 incompatibility). Skipping FB scrape.")
+        print("INFO: To add events manually, place them in data/new_events.json and re-run.")
+        return []
     if not FB_PAGE_ID:
         print("WARNING: FB_PAGE_ID not set. Skipping scrape.")
         return []
