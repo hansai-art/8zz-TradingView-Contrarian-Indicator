@@ -1,19 +1,19 @@
 {
   "stats": {
-    "generated_at": "2026-04-13T04:32:25.323848+00:00",
+    "generated_at": "2026-04-13T04:45:21.925581+00:00",
     "fallback_ticker": "0050.TW",
     "mode_a_hold_bars": 17,
-    "total_events": 67,
+    "total_events": 66,
     "total_flips": 42,
-    "resolved_flips": 40,
-    "open_flips": 2,
+    "resolved_flips": 39,
+    "open_flips": 3,
     "wins": 31,
-    "losses": 7,
-    "win_rate": 77.5,
-    "avg_pnl_pct": 3.26,
-    "bullish_flips": 21,
+    "losses": 6,
+    "win_rate": 79.5,
+    "avg_pnl_pct": 3.34,
+    "bullish_flips": 20,
     "bullish_wins": 18,
-    "bullish_win_rate": 85.7,
+    "bullish_win_rate": 90.0,
     "bearish_flips": 19,
     "bearish_wins": 13,
     "bearish_win_rate": 68.4,
@@ -29,21 +29,21 @@
         "win_rate": 80.0
       },
       "3": {
-        "total": 11,
+        "total": 10,
         "wins": 9,
-        "win_rate": 81.8
+        "win_rate": 90.0
       }
     },
     "mode_b": {
-      "resolved_flips": 40,
-      "open_flips": 2,
+      "resolved_flips": 39,
+      "open_flips": 3,
       "wins": 31,
-      "losses": 7,
-      "win_rate": 77.5,
-      "avg_pnl_pct": 3.26,
-      "bullish_flips": 21,
+      "losses": 6,
+      "win_rate": 79.5,
+      "avg_pnl_pct": 3.34,
+      "bullish_flips": 20,
       "bullish_wins": 18,
-      "bullish_win_rate": 85.7,
+      "bullish_win_rate": 90.0,
       "bearish_flips": 19,
       "bearish_wins": 13,
       "bearish_win_rate": 68.4,
@@ -59,9 +59,9 @@
           "win_rate": 80.0
         },
         "3": {
-          "total": 11,
+          "total": 10,
           "wins": 9,
-          "win_rate": 81.8
+          "win_rate": 90.0
         }
       }
     },
@@ -1246,9 +1246,9 @@
       "is_flip": true,
       "entry_date": "2026-04-07T23:30",
       "entry_price": 96.46,
-      "exit_date": "2026-04-10T01:30",
-      "exit_price": 98.61,
-      "pnl_pct": 2.23,
+      "exit_date": "2026-04-09T00:30",
+      "exit_price": 97.67,
+      "pnl_pct": 1.25,
       "outcome": "win",
       "exit_date_a": "2026-04-08T08:00",
       "exit_price_a": 96.47,
@@ -1285,37 +1285,24 @@
       "unix_ms": 1775697900000,
       "date": "2026-04-09",
       "time_utc": "2026-04-09T01:25:00+00:00",
-      "direction": 1,
-      "dir_label": "偏多 ▲",
+      "direction": -1,
+      "dir_label": "偏空 ▼",
       "strength": 3,
       "strength_label": "★★★",
-      "tooltip": "衝動(復仇) | 信驊\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 09:25 停損渣男鈦昇後買信驊",
+      "tooltip": "衝動買進 | 信驊\n指標: 偏空 ▼ | 強度: ★★★\nFB 04/09 09:25 停損渣男鈦昇後買信驊",
       "ticker": "5274.TWO",
       "ticker_is_fallback": false,
       "is_flip": true,
       "entry_date": "2026-04-09",
       "entry_price": 12560.0,
-      "exit_date": "2026-04-10T01:30",
-      "exit_price": 12450.0,
-      "pnl_pct": -0.88,
-      "outcome": "loss",
+      "exit_date": "2026-04-13T04:00",
+      "exit_price": 12145.0,
+      "pnl_pct": 3.3,
+      "outcome": "open",
       "exit_date_a": null,
       "exit_price_a": null,
       "pnl_pct_a": null,
       "outcome_a": "open"
-    },
-    {
-      "unix_ms": 1775708100000,
-      "date": "2026-04-09",
-      "time_utc": "2026-04-09T04:15:00+00:00",
-      "direction": 1,
-      "dir_label": "偏多 ▲",
-      "strength": 3,
-      "strength_label": "★★★",
-      "tooltip": "驗證 | 鈦昇漲停\n指標: 偏多 ▲ | 強度: ★★★\nFB 04/09 12:15 停損後鈦昇漲停",
-      "ticker": "0050.TW",
-      "ticker_is_fallback": true,
-      "is_flip": false
     },
     {
       "unix_ms": 1775786640000,
@@ -1332,8 +1319,8 @@
       "entry_date": "2026-04-10T01:30",
       "entry_price": 639.0,
       "exit_date": "2026-04-13T04:00",
-      "exit_price": 609.0,
-      "pnl_pct": 4.69,
+      "exit_price": 608.0,
+      "pnl_pct": 4.85,
       "outcome": "open",
       "exit_date_a": null,
       "exit_price_a": null,
@@ -1355,8 +1342,8 @@
       "entry_date": "2026-04-10T01:30",
       "entry_price": 3410.0,
       "exit_date": "2026-04-13T04:00",
-      "exit_price": 3345.0,
-      "pnl_pct": 1.91,
+      "exit_price": 3335.0,
+      "pnl_pct": 2.2,
       "outcome": "open",
       "exit_date_a": null,
       "exit_price_a": null,
@@ -1549,20 +1536,20 @@
         "value": 328.95
       },
       {
-        "date": "2026-04-10T01:30",
-        "value": 336.29
-      },
-      {
-        "date": "2026-04-10T01:30",
-        "value": 333.33
+        "date": "2026-04-09T00:30",
+        "value": 333.06
       },
       {
         "date": "2026-04-13T04:00",
-        "value": 348.96
+        "value": 344.05
       },
       {
         "date": "2026-04-13T04:00",
-        "value": 339.69
+        "value": 349.22
+      },
+      {
+        "date": "2026-04-13T04:00",
+        "value": 340.39
       }
     ],
     "mode_a": [
@@ -2054,7 +2041,7 @@
     {
       "hold_bars": 14,
       "win_rate": 67.5,
-      "avg_pnl_pct": 2.99,
+      "avg_pnl_pct": 3.0,
       "wins": 27,
       "losses": 13,
       "resolved": 40
@@ -2086,7 +2073,7 @@
     {
       "hold_bars": 18,
       "win_rate": 73.7,
-      "avg_pnl_pct": 4.04,
+      "avg_pnl_pct": 4.03,
       "wins": 28,
       "losses": 10,
       "resolved": 38
@@ -2246,7 +2233,7 @@
     {
       "hold_bars": 38,
       "win_rate": 53.1,
-      "avg_pnl_pct": 0.96,
+      "avg_pnl_pct": 0.98,
       "wins": 17,
       "losses": 15,
       "resolved": 32
@@ -2302,7 +2289,7 @@
     {
       "hold_bars": 45,
       "win_rate": 64.5,
-      "avg_pnl_pct": 5.89,
+      "avg_pnl_pct": 5.88,
       "wins": 20,
       "losses": 11,
       "resolved": 31
@@ -2310,7 +2297,7 @@
     {
       "hold_bars": 46,
       "win_rate": 60.0,
-      "avg_pnl_pct": 5.64,
+      "avg_pnl_pct": 5.62,
       "wins": 18,
       "losses": 12,
       "resolved": 30

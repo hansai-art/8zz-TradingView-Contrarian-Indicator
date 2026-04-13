@@ -67,6 +67,8 @@ def parse_events(pine_text: str) -> list[dict]:
     for m in pattern.finditer(pine_text):
         unix_ms = int(m.group(1))
         direction = int(m.group(2))
+        if direction == 0:
+            continue  # skip observation/neutral entries (non-trade signals)
         strength = int(m.group(3))
         tooltip = m.group(4).replace("\\n", "\n")
         raw_ticker = m.group(5).strip()
