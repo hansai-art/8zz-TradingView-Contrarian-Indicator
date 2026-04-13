@@ -92,14 +92,25 @@ def parse_events(pine_text: str) -> list[dict]:
 
 def mark_flips(events: list[dict]) -> list[dict]:
     """
-    Walk events in order; mark an event as a flip when its direction
-    differs from the previous accepted direction (same logic as Pine).
+    Walk events in order; mark an event as a flip when:
+      1. Its direction differs from the previous accepted direction, OR
+      2. Its direction is the same but the ticker is different from all
+         tickers already open in this direction — this handles the case
+         where one FB post signals the same sentiment across multiple
+         tickers (e.g. 台光電 + 亞翔 on the same day).
     """
     current_dir = 0
+    current_tickers: set[str] = set()
     for evt in events:
+        ticker = evt.get("ticker", "")
         if evt["direction"] != current_dir:
             evt["is_flip"] = True
             current_dir = evt["direction"]
+            current_tickers = {ticker}
+        elif ticker and ticker not in current_tickers:
+            # Same direction, new ticker → parallel trade on the same signal
+            evt["is_flip"] = True
+            current_tickers.add(ticker)
     return events
 
 
