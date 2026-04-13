@@ -1,6 +1,6 @@
 {
   "stats": {
-    "generated_at": "2026-04-13T04:23:35.597530+00:00",
+    "generated_at": "2026-04-13T04:24:57.352459+00:00",
     "fallback_ticker": "0050.TW",
     "mode_a_hold_bars": 17,
     "total_events": 67,
@@ -1405,8 +1405,8 @@
       "entry_date": "2026-04-10T01:30",
       "entry_price": 3410.0,
       "exit_date": "2026-04-13",
-      "exit_price": 3340.0,
-      "pnl_pct": 2.05,
+      "exit_price": 3345.0,
+      "pnl_pct": 1.91,
       "outcome": "win",
       "exit_date_a": null,
       "exit_price_a": null,
@@ -1439,10 +1439,10 @@
       "ticker_is_fallback": true,
       "is_flip": true,
       "entry_date": "2026-04-13",
-      "entry_price": 80.6,
+      "entry_price": 80.65,
       "exit_date": "2026-04-13T03:30",
       "exit_price": 80.6,
-      "pnl_pct": -0.0,
+      "pnl_pct": 0.06,
       "outcome": "open",
       "exit_date_a": null,
       "exit_price_a": null,
@@ -1642,11 +1642,11 @@
       },
       {
         "date": "2026-04-13",
-        "value": 253.29
+        "value": 252.94
       },
       {
         "date": "2026-04-13T03:30",
-        "value": 253.29
+        "value": 253.1
       }
     ],
     "mode_a": [
@@ -2146,7 +2146,7 @@
       },
       {
         "date": "2026-04-13",
-        "value": 129.37
+        "value": 129.45
       }
     ]
   },
@@ -2186,7 +2186,7 @@
     {
       "hold_bars": 18,
       "win_rate": 69.0,
-      "avg_pnl_pct": 3.9,
+      "avg_pnl_pct": 3.88,
       "wins": 29,
       "losses": 13,
       "resolved": 42
@@ -2194,7 +2194,7 @@
     {
       "hold_bars": 19,
       "win_rate": 70.7,
-      "avg_pnl_pct": 2.79,
+      "avg_pnl_pct": 2.8,
       "wins": 29,
       "losses": 12,
       "resolved": 41
@@ -2346,7 +2346,7 @@
     {
       "hold_bars": 38,
       "win_rate": 50.0,
-      "avg_pnl_pct": 1.29,
+      "avg_pnl_pct": 1.32,
       "wins": 18,
       "losses": 18,
       "resolved": 36
@@ -2410,7 +2410,7 @@
     {
       "hold_bars": 46,
       "win_rate": 55.9,
-      "avg_pnl_pct": 5.34,
+      "avg_pnl_pct": 5.3,
       "wins": 19,
       "losses": 15,
       "resolved": 34
