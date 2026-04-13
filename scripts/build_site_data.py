@@ -94,21 +94,25 @@ def mark_flips(events: list[dict]) -> list[dict]:
     """
     Walk events in order; mark an event as a flip when:
       1. Its direction differs from the previous accepted direction, OR
-      2. Its direction is the same but the ticker is different from all
-         tickers already open in this direction — this handles the case
-         where one FB post signals the same sentiment across multiple
-         tickers (e.g. 台光電 + 亞翔 on the same day).
+      2. Its direction is the same, it carries an EXPLICIT (non-fallback) ticker,
+         and that ticker hasn't been seen yet in this direction run.
+         This handles one FB post naming multiple tickers (e.g. 台光電 + 亞翔).
+
+    Events whose ticker is the fallback (0050.TW) are NOT used to open
+    parallel flips — they are supplementary observations only.
     """
     current_dir = 0
     current_tickers: set[str] = set()
     for evt in events:
         ticker = evt.get("ticker", "")
+        is_fallback = evt.get("ticker_is_fallback", False)
+
         if evt["direction"] != current_dir:
             evt["is_flip"] = True
             current_dir = evt["direction"]
             current_tickers = {ticker}
-        elif ticker and ticker not in current_tickers:
-            # Same direction, new ticker → parallel trade on the same signal
+        elif not is_fallback and ticker not in current_tickers:
+            # Same direction, explicit new ticker → parallel trade on the same signal
             evt["is_flip"] = True
             current_tickers.add(ticker)
     return events
@@ -281,14 +285,24 @@ def nearest_close(prices: dict[str, float], target_dt: datetime) -> tuple[str | 
 def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, float]]) -> list[dict]:
     """
     Mode B – Flip-based exit.
-    Each flip event is open until the next flip fires (or today if still open).
+    Each flip event is open until the next flip with an OPPOSING direction fires
+    (or today if still open).  Parallel flips (same direction, different ticker)
+    stay open until the same reversal — they do NOT close each other.
     Fills: entry_date, entry_price, exit_date, exit_price, pnl_pct, outcome.
     """
     flips = [e for e in events if e["is_flip"]]
     today = datetime.now(timezone.utc)
 
+    def find_exit_idx(i: int) -> int | None:
+        """Return index of the next flip whose direction differs from flips[i]."""
+        for j in range(i + 1, len(flips)):
+            if flips[j]["direction"] != flips[i]["direction"]:
+                return j
+        return None
+
     for i, flip in enumerate(flips):
-        is_last = i + 1 >= len(flips)
+        exit_idx = find_exit_idx(i)
+        is_last = exit_idx is None
         prices = all_prices.get(flip["ticker"], {})
 
         entry_dt = datetime.fromisoformat(flip["time_utc"])
@@ -307,7 +321,7 @@ def compute_outcomes_mode_b(events: list[dict], all_prices: dict[str, dict[str, 
         flip["entry_price"] = round(entry_price, 2)
 
         if not is_last:
-            exit_dt = datetime.fromisoformat(flips[i + 1]["time_utc"])
+            exit_dt = datetime.fromisoformat(flips[exit_idx]["time_utc"])
             is_open = False
         else:
             exit_dt = today
