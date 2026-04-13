@@ -2,9 +2,9 @@
 """
 fetch_fb_events.py
 ──────────────────
-Scrapes public FB posts from the tracked page, classifies each post's
-sentiment using Claude AI (with keyword-rule fallback), then writes new
-events to data/new_events.json for update_pine_script.py to consume.
+Fetches recent posts from the tracked FB page via Apify API, classifies
+each post's sentiment using Google Gemini AI (with keyword-rule fallback),
+then writes new events to data/new_events.json for update_pine_script.py.
 
 State tracking:
   data/last_event_timestamp.json  – stores last successfully processed
@@ -12,10 +12,8 @@ State tracking:
                                     are idempotent.
 
 Environment variables (set as GitHub Actions secrets):
-  FB_PAGE_ID        – public page ID or username (e.g. "SomePage")
-  FB_COOKIES        – optional; FB session cookies as JSON string for pages
-                      that require login (leave empty for fully public pages)
-  ANTHROPIC_API_KEY – Claude Haiku API key for AI classification.
+  APIFY_TOKEN       – Apify API token (Settings → Integrations → API tokens)
+  GOOGLE_API_KEY    – Google Gemini API key for AI classification.
                       If absent, falls back to the keyword rule table.
 
 Usage:
@@ -29,11 +27,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    from facebook_scraper import get_posts
-    _FB_SCRAPER_AVAILABLE = True
-except ImportError:
-    _FB_SCRAPER_AVAILABLE = False
+import urllib.request
+import urllib.error
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,12 +36,105 @@ STATE_FILE = ROOT / "data" / "last_event_timestamp.json"
 OUTPUT_FILE = ROOT / "data" / "new_events.json"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-FB_PAGE_ID: str        = os.environ.get("FB_PAGE_ID", "")
-FB_COOKIES: str        = os.environ.get("FB_COOKIES", "")
+APIFY_TOKEN: str    = os.environ.get("APIFY_TOKEN", "")
 GOOGLE_API_KEY: str = os.environ.get("GOOGLE_API_KEY", "")
-MAX_POSTS_PER_RUN: int = 10
 
-# ── Claude AI classification ──────────────────────────────────────────────────
+# Apify actor for Facebook Posts Scraper
+APIFY_ACTOR_ID   = "apify~facebook-posts-scraper"
+APIFY_FB_URL     = "https://www.facebook.com/DieWithoutBang"
+APIFY_MAX_POSTS  = 10   # posts per Apify run
+
+# ── Apify FB scraping ─────────────────────────────────────────────────────────
+
+def fetch_posts_via_apify() -> list[dict]:
+    """
+    Trigger an Apify run of facebook-posts-scraper synchronously,
+    then return the resulting dataset items.
+    Falls back gracefully if APIFY_TOKEN is missing or API call fails.
+    """
+    if not APIFY_TOKEN:
+        print("WARNING: APIFY_TOKEN not set. Skipping FB scrape.")
+        return []
+
+    # ── 1. Trigger a synchronous run (waits until finished) ───────────────────
+    run_url = (
+        f"https://api.apify.com/v2/acts/{APIFY_ACTOR_ID}/run-sync-get-dataset-items"
+        f"?token={APIFY_TOKEN}&timeout=120&memory=256"
+    )
+    payload = json.dumps({
+        "startUrls": [{"url": APIFY_FB_URL}],
+        "resultsLimit": APIFY_MAX_POSTS,
+    }).encode("utf-8")
+
+    print(f"ℹ️  Triggering Apify run for {APIFY_FB_URL} …")
+    try:
+        req = urllib.request.Request(
+            run_url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=150) as resp:
+            items = json.loads(resp.read().decode("utf-8"))
+        print(f"ℹ️  Apify returned {len(items)} item(s).")
+        return items
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"ERROR: Apify HTTP {e.code}: {body[:300]}")
+    except Exception as exc:
+        print(f"ERROR: Apify call failed: {exc}")
+
+    return []
+
+
+def parse_apify_post(item: dict) -> tuple[str, datetime] | None:
+    """
+    Extract (text, datetime) from an Apify facebook-posts-scraper item.
+    Returns None if the item lacks usable text or timestamp.
+    """
+    text: str = (
+        item.get("text") or
+        item.get("postText") or
+        item.get("message") or
+        ""
+    ).strip()
+    if not text:
+        return None
+
+    # Try several timestamp field names used by different actor versions
+    raw_time = (
+        item.get("time") or
+        item.get("timestamp") or
+        item.get("created_time") or
+        item.get("date") or
+        ""
+    )
+    post_time: datetime | None = None
+    if raw_time:
+        try:
+            # ISO 8601 string  (e.g. "2026-04-13T05:30:00.000Z")
+            post_time = datetime.fromisoformat(
+                str(raw_time).replace("Z", "+00:00")
+            )
+        except ValueError:
+            pass
+    if post_time is None:
+        # Unix seconds fallback
+        unix = item.get("unixTimestamp") or item.get("unix_timestamp")
+        if unix:
+            post_time = datetime.fromtimestamp(int(unix), tz=timezone.utc)
+
+    if post_time is None:
+        print(f"  WARNING: could not parse timestamp for item, skipping.")
+        return None
+
+    if post_time.tzinfo is None:
+        post_time = post_time.replace(tzinfo=timezone.utc)
+
+    return text, post_time
+
+
+# ── Google Gemini AI classification ──────────────────────────────────────────
 
 _SYSTEM = """你是「8zz 反指標」系統的情緒分析器，專門分析台灣散戶的 Facebook 投資貼文。
 
@@ -105,7 +193,6 @@ def classify_with_ai(text: str) -> dict | None:
             system_instruction=_SYSTEM,
         )
 
-        # Build few-shot prompt as a single string
         few_shot = ""
         for i in range(0, len(_EXAMPLES), 2):
             u = _EXAMPLES[i]["content"]
@@ -131,29 +218,21 @@ def classify_with_ai(text: str) -> dict | None:
 
 
 # ── Keyword-rule fallback ─────────────────────────────────────────────────────
-# Each entry: (keywords_list, direction, base_strength)
 SENTIMENT_RULES: list[tuple[list[str], int, int]] = [
-    # ── Strong bullish (poster in distress / capitulating) ────────────────────
     (["停損", "認賠", "虧損", "損失", "全賠", "出清停損", "畢業", "爆倉"], 1, 3),
     (["被套", "套牢", "跌停", "住套房", "房貸", "公園", "淨值歸零"],       1, 3),
-    # ── Moderate bullish ──────────────────────────────────────────────────────
     (["賣出", "停利", "獲利了結", "出場", "認損"],    1, 2),
     (["心碎", "白做工", "不懂", "怎麼辦", "救我"],    1, 2),
-    # ── Weak bullish ──────────────────────────────────────────────────────────
     (["觀望", "等", "修正", "怕", "謹慎"],            1, 1),
-    # ── Strong bearish (over-confident / chasing) ─────────────────────────────
     (["漲停買", "漲停追", "市價掛", "追漲"],          -1, 3),
     (["無敵", "一定漲", "必漲"],                      -1, 3),
-    # ── Moderate bearish ──────────────────────────────────────────────────────
     (["買進", "加碼", "補倉", "買了", "入手", "佈局", "再買"], -1, 2),
     (["看多", "多頭", "應該漲", "會漲", "繼續持有"],  -1, 2),
-    # ── Weak bearish ──────────────────────────────────────────────────────────
     (["持有", "觀察", "等待", "慢慢漲", "長期"],       -1, 1),
 ]
 
 
 def classify_with_keywords(text: str) -> tuple[int, int, str] | None:
-    """Return (direction, strength, matched_keyword) or None if no rule matched."""
     for keywords, direction, strength in SENTIMENT_RULES:
         for kw in keywords:
             if kw in text:
@@ -164,14 +243,11 @@ def classify_with_keywords(text: str) -> tuple[int, int, str] | None:
 # ── Tooltip builder ───────────────────────────────────────────────────────────
 
 def build_tooltip(post_text: str, direction: int, strength: int, action: str, dt: datetime) -> str:
-    """Produce a multi-line tooltip string matching the existing Pine format."""
     dir_label = "偏多 ▲" if direction == 1 else "偏空 ▼"
     stars = {1: "★☆☆", 2: "★★☆", 3: "★★★"}.get(strength, "★☆☆")
-
     snippet = post_text.replace("\n", " ").strip()
     if len(snippet) > 60:
         snippet = snippet[:57] + "..."
-
     date_str = dt.astimezone(timezone.utc).strftime("FB %m/%d %H:%M")
     return (
         f"{action or '貼文'}\n"
@@ -183,7 +259,6 @@ def build_tooltip(post_text: str, direction: int, strength: int, action: str, dt
 # ── State persistence ─────────────────────────────────────────────────────────
 
 def load_state() -> int:
-    """Return last processed timestamp in unix ms (0 = fetch all)."""
     if STATE_FILE.exists():
         try:
             data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
@@ -205,69 +280,30 @@ def save_state(last_unix_ms: int) -> None:
     )
 
 
-# ── FB scraping ───────────────────────────────────────────────────────────────
-
-def fetch_posts() -> list[dict]:
-    """Fetch recent posts from the FB page using facebook-scraper."""
-    if not _FB_SCRAPER_AVAILABLE:
-        print("WARNING: facebook-scraper unavailable (Python 3.12 incompatibility). Skipping FB scrape.")
-        print("INFO: To add events manually, place them in data/new_events.json and re-run.")
-        return []
-    if not FB_PAGE_ID:
-        print("WARNING: FB_PAGE_ID not set. Skipping scrape.")
-        return []
-
-    cookies: dict | None = None
-    if FB_COOKIES:
-        try:
-            cookies = json.loads(FB_COOKIES)
-        except json.JSONDecodeError:
-            print("WARNING: FB_COOKIES is not valid JSON. Proceeding without cookies.")
-
-    kwargs: dict = {"pages": 1, "options": {"posts_per_page": MAX_POSTS_PER_RUN}}
-    if cookies:
-        kwargs["cookies"] = cookies
-
-    posts: list[dict] = []
-    try:
-        for post in get_posts(FB_PAGE_ID, **kwargs):
-            posts.append(post)
-            if len(posts) >= MAX_POSTS_PER_RUN:
-                break
-    except (ConnectionError, TimeoutError, ValueError, RuntimeError) as exc:
-        print(f"ERROR while fetching posts: {exc}")
-
-    return posts
-
-
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
     using_ai = bool(GOOGLE_API_KEY)
-    print(f"ℹ️  Classifier: {'Gemini Flash (AI)' if using_ai else 'keyword rules (set GOOGLE_API_KEY to enable AI)'}")
+    print(f"ℹ️  Classifier: {'Gemini Flash (AI)' if using_ai else 'keyword rules'}")
 
     last_unix_ms = load_state()
-    raw_posts = fetch_posts()
+    raw_items = fetch_posts_via_apify()
 
     new_events: list[dict] = []
     latest_unix_ms = last_unix_ms
 
-    for post in raw_posts:
-        post_time: datetime | None = post.get("time")
-        if post_time is None:
+    for item in raw_items:
+        parsed = parse_apify_post(item)
+        if parsed is None:
             continue
-        if post_time.tzinfo is None:
-            post_time = post_time.replace(tzinfo=timezone.utc)
+        text, post_time = parsed
 
         unix_ms = int(post_time.timestamp() * 1000)
         if unix_ms <= last_unix_ms:
+            print(f"  Skipping already-processed post ({post_time.strftime('%m/%d %H:%M')})")
             continue
 
-        text: str = post.get("text") or post.get("post_text") or ""
-        if not text:
-            continue
-
-        # ── Try Gemini first ──────────────────────────────────────────────────
+        # ── Classify ──────────────────────────────────────────────────────────
         direction, strength, action, ticker = 0, 1, "", ""
         ai = classify_with_ai(text)
 
@@ -276,18 +312,17 @@ def main() -> None:
             strength  = ai["strength"]
             action    = ai["action"]
             ticker    = ai["ticker"]
-            print(f"  [Gemini] dir={direction} str={strength} action='{action}' ticker='{ticker or '(0050 fallback)'}'")
+            print(f"  [Gemini] dir={direction} str={strength} action='{action}' ticker='{ticker or '(0050)'}' | {text[:40]}")
         else:
-            # ── Keyword fallback ──────────────────────────────────────────────
             kw = classify_with_keywords(text)
             if kw is None:
-                print("  [keyword] no match – skipping")
+                print(f"  [keyword] no match – skipping | {text[:40]}")
                 continue
             direction, strength, action = kw
-            print(f"  [keyword] dir={direction} str={strength} action='{action}'")
+            print(f"  [keyword] dir={direction} str={strength} action='{action}' | {text[:40]}")
 
         if direction == 0:
-            print("  → direction=0, skipping (not investment-related)")
+            print(f"  → direction=0, not investment-related, skipping")
             continue
 
         tooltip = build_tooltip(text, direction, strength, action, post_time)

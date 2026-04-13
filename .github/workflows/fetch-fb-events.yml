@@ -50,8 +50,7 @@ jobs:
       # ── 3. Scrape & classify ─────────────────────────────────────────────────
       - name: Fetch and classify FB posts
         env:
-          FB_PAGE_ID:    ${{ secrets.FB_PAGE_ID }}
-          FB_COOKIES:    ${{ secrets.FB_COOKIES }}
+          APIFY_TOKEN:    ${{ secrets.APIFY_TOKEN }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: python scripts/fetch_fb_events.py
 
